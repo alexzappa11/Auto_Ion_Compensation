@@ -1,0 +1,4 @@
+#Extra Options
+#-------------
+
+visualizations=False                      #whether plots should be presented after run
