@@ -10,7 +10,7 @@ import subprocess as sub
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
-from slot_configuration import *
+from DAQ_slot_configuration import *
 from matplotlib import interactive
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
