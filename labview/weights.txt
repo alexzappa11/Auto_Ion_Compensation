@@ -1,7 +1,0 @@
-position: 871.1
-Harmonic  Weight  1
-Uniform Quad Weight 0.8
-Comp ExTol wight 0.2
-Comp EyTol wight 0.5
-
-
