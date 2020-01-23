@@ -32,7 +32,7 @@ compExTol = pd.read_csv(
     'Waveform_files/microwave_20121112_compExTol.csv', sep=',', header=None)
 compEyTol = pd.read_csv(
     'Waveform_files/microwave_20121112_compEyTol.csv', sep=',', header=None)
-harmonic = pd.read_csv('Waveform_data/microwave_20121112_harmonic.csv', sep=',', header=None)
+harmonic = pd.read_csv('Waveform_files/microwave_20121112_harmonic.csv', sep=',', header=None)
 uniform_Quad = pd.read_csv(
     'Waveform_files/microwave_20121112_uniform_Quad.csv', sep=',', header=None)
 BeamVxByPosition = pd.read_csv("Waveform_files/BeamVxByPosition.csv", sep=',', header=None)
