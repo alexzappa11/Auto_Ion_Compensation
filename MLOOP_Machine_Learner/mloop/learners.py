@@ -25,7 +25,7 @@ import mloop.neuralnet as mlnn
 #Lazy import of scikit-learn and tensorflow
 
 learner_thread_count = 0
-default_learner_archive_filename = 'learner_archive' 
+default_learner_archive_filename = 'learner_archive_2020-01-23_22-24' 
 default_learner_archive_file_type = 'txt'
 
 class LearnerInterrupt(Exception):

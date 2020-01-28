@@ -1,5 +1,5 @@
 # Imports for python 2 compatibility
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import, division, print_function, unicode_literals
 __metaclass__ = type
 
 # Imports for M-LOOP
@@ -8,34 +8,27 @@ import mloop.controllers as mlc
 import mloop.visualizations as mlv
 import mloop.neuralnet as nn
 
+
 # Other imports
 import numpy as np
 import time
-from multi_var_quadratic import *
+import multi_var_quadratic as mvq
 from sklearn import *
-
+import tensorflow as tf
+import _pickle as pickle
+import time
 # Declare your custom class that inherets from the Interface class
 
 
 class CustomInterface(mli.Interface):
 
-    # Initialization of the interface, including this method is optional
-    def __init__(self):
-        # You must include the super command to call the parent class, Interface, constructor
+    def __init__(self, simulation_function):
+
         super(CustomInterface, self).__init__()
 
-        # Attributes of the interface can be added here
-        # If you want to precalculate any variables etc. this is the place to do it
-        dim = 48
-        self.A = datasets.make_spd_matrix(dim, random_state=2)
-        np.random.seed(1)
-        self.b = np.random.rand(dim)
-        self.c = np.random.rand()
-        # local minima:  c - 1/4  * b.T * A^(-1) * b
-        self.local_minima = self.c - 0.25 * \
-            np.dot(np.dot(self.b.T, np.linalg.inv(self.A)), self.b)
-        # loca minima  at: -1/2 * A^(-1)* b
-        self.local_minima_vals = -0.5 * np.dot(np.linalg.inv(self.A), self.b)
+        self.simulationFunction = simulation_function
+        self.min_parameters = simulation_function.get_min_parameters
+        self.min = simulation_function.get_min_parameters
 
     # You must include the get_next_cost_dict method in your class
     # this method is called whenever M-LOOP wants to run an experiment
@@ -45,12 +38,7 @@ class CustomInterface(mli.Interface):
         params = params_dict['params']
 
         # Here you can include the code to run your experiment given a particular set of parameters
-        t1 = np.dot(params.T, self.A)
-        t2 = np.dot(t1, params)
-        t3 = np.dot(self.b.T, params)
-        Z = t2 + t3 + self.c
-        cost = Z
-        # cost = np.sum(params)
+        cost = self.simulationFunction.evaluate_at_params(params)
         # There is no uncertainty in our result
         uncer = 0
         # The evaluation will always be a success
@@ -63,18 +51,25 @@ class CustomInterface(mli.Interface):
         cost_dict = {'cost': cost, 'uncer': uncer, 'bad': bad}
         return cost_dict
 
+    def min_parameters(self):
+        return self.self.min_parameters
+
+    def get_min(self):
+        return self.min
+
 
 def main():
     # M-LOOP can be run with three commands
 
     # First create your interface
-    interface = CustomInterface()
+    interface = CustomInterface(mvq.quadratic(48))
     # Next create the controller, provide it with your controller and any options you want to set
     controller = mlc.create_controller(interface,
-                                       #   controller_type="gaussian_process",
-                                       controller_type='differential_evolution',
+                                       #    controller_type="gaussian_process",
+                                       #    controller_type='differential_evolution',
                                        #   controller_type='nelder_mead',
-                                       #    controller_type='neural_net',
+                                    #    controller_type='neural_net',
+                                       #    controller_type='random',
                                        max_num_runs=100,
                                        num_params=48,
                                        #    target_cost=-9.627,
@@ -99,13 +94,13 @@ def main():
                                        #    noise_level=0.5,
 
                                        ##### Neural Net ###
-                                       training_type='differential_evolution',
+                                       #    training_type='differential_evolution',
 
                                        ###### Nelder Mead ####
-                                       # initial corner of the simplex
-                                       initial_simplex_corner=interface.local_minima_vals*1.8,
-                                       initial_simplex_displacements=np.full(
-                                           48, 0.1)
+                                       #    # initial corner of the simplex
+                                       #    initial_simplex_corner=interface.min_parameters()*1.8,
+                                       #    initial_simplex_displacements=np.full(
+                                       #        48, 0.1)
 
 
                                        #    # initial lengths scales for GP
@@ -130,28 +125,50 @@ def main():
 
                                        )
     # To run M-LOOP and find the optimal parameters just use the controller method optimize
-    controller.optimize()
-    print('Best parameters found:')
-    print(controller.best_params)
+    # controller.optimize()
+    # controller.run()
+    # print('Best parameters found:')
+    # print(controller.best_params)
     # You can also run the default sets of visualizations for the controller with one command
-    mlv.show_all_default_visualizations(controller)
 
-    ####### Neural Net #####
-    # neural_network = nn.NeuralNet(
-    #     num_params=48,
-    #     fit_hyperparameters=True
-    # )
-    # neural_network.init()
-    # initial_net = neural_network._make_net(0)
+    # mlv.show_all_default_visualizations(controller)
 
-    # neural_network.fit_neural_net(controller.out_params, controller.in_costs)
-    # neural_network.start_opt()
-    # print("Predicted Cost", neural_network.predict_cost(
-    # interface.local_minima_vals))
-    # The results of the optimization will be saved to files and can also be accessed as attributes of the controller.
-    single_neural_net = SingleNeuralNet()
+#     ####### Neural Net #####
+#     neural_network = nn.NeuralNet(
+#         num_params=48,
+#         fit_hyperparameters=False
+#     )
+#     neural_network.init()
+#     initial_net = neural_network._make_net(1)
+#     neural_network.fit_neural_net(controller.out_params, controller.in_costs)
 
-    )
+#     print("Predicted Cost", neural_network.predict_cost(
+#         interface.min_parameters()))
+
+
+# # #### Save Neural Net to file #######
+#     timestr = time.strftime("%Y%m%d-%H%M%S")
+#     saved_net = neural_network.save()
+#     with open('savedNet'+timestr+'.txt', 'wb') as handle:
+#         pickle.dump(saved_net, handle)
+#     with open('savedNetReadable'+timestr+'.txt', 'w') as f:
+#         print(saved_net, file=f)
+
+
+# ## Load Neural Net from file ###
+#     with open('savedNet.txt', 'rb') as handle:
+#         saved_net = pickle.loads(handle.read())
+
+#     #### Load Previous Network ####
+#     neural_network = nn.NeuralNet(
+#         num_params=48,
+#         fit_hyperparameters=False
+#     )
+
+#     neural_network.load(saved_net)  # load neural net
+
+#     print("Predicted Cost", neural_network.predict_cost(
+#         interface.min_parameters()))
 
 
 # Ensures main is run when this code is run as a script
