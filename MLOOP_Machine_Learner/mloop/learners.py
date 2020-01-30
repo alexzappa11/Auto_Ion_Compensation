@@ -25,7 +25,7 @@ import mloop.neuralnet as mlnn
 #Lazy import of scikit-learn and tensorflow
 
 learner_thread_count = 0
-default_learner_archive_filename = 'learner_archive_2020-01-23_22-24' 
+default_learner_archive_filename = 'learner_archive' 
 default_learner_archive_file_type = 'txt'
 
 class LearnerInterrupt(Exception):
@@ -1545,7 +1545,7 @@ class NeuralNetLearner(Learner, mp.Process):
         self.scaled_costs = None
  
         #Constants, limits and tolerances
-        self.num_nets = 3
+        self.num_nets = 1
         self.generation_num = 3
         self.search_precision = 1.0e-6
         self.parameter_searches = max(10,self.num_params)
@@ -1601,6 +1601,7 @@ class NeuralNetLearner(Learner, mp.Process):
         self.log = None
 
     def _construct_net(self):
+        print("Constructing Net")
         self.neural_net = [mlnn.NeuralNet(self.num_params) for _ in range(self.num_nets)]
 
     def _init_cost_scaler(self):
@@ -1608,6 +1609,7 @@ class NeuralNetLearner(Learner, mp.Process):
         Initialises the cost scaler. cost_scaler_init_index must be set.
         '''
         self.cost_scaler = skp.StandardScaler(with_mean=False, with_std=False)
+
         self.cost_scaler.fit(self.all_costs[:self.cost_scaler_init_index,np.newaxis])
 
     def create_neural_net(self):
@@ -1633,7 +1635,9 @@ class NeuralNetLearner(Learner, mp.Process):
         Fits a neural net to the data.
 
         cost_scaler must have been fitted before calling this method.
+        
         '''
+        self._init_cost_scaler()
         self.scaled_costs = self.cost_scaler.transform(self.all_costs[:,np.newaxis])[:,0]
 
         self.neural_net[index].fit_neural_net(self.all_params, self.scaled_costs)
@@ -1858,8 +1862,9 @@ class NeuralNetLearner(Learner, mp.Process):
         return next_params
 
     def run(self):
+        print("##############runnning@##############")
         '''
-        Starts running the neural network learner. When the new parameters event is triggered, reads the cost information provided and updates the neural network with the information. Then searches the neural network for new optimal parameters to test based on the biased cost. Parameters to test next are put on the output parameters queue.
+        Starts running thhWhen the new parameters event is triggered, reads the cost information provided and updates the neural network with the information. Then searches the neural network for new optimal parameters to test based on the biased cost. Parameters to test next are put on the output parameters queue.
         '''
         #logging to the main log file from a process (as apposed to a thread) in cpython is currently buggy on windows and/or python 2.7
         #current solution is to only log to the console for warning and above from a process
@@ -1876,7 +1881,7 @@ class NeuralNetLearner(Learner, mp.Process):
             while not self.end_event.is_set():
                 self.log.debug('Learner waiting for new params event')
                 # TODO: Not doing this because it's slow. Is it necessary?
-                #self.save_archive()
+                # self.save_archive()
                 self.wait_for_new_params_event()
                 self.log.debug('NN learner reading costs')
                 self.get_params_and_costs()

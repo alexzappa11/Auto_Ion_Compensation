@@ -10,7 +10,6 @@ import numpy.random as nr
 import sklearn.preprocessing as skp
 import tensorflow as tf
 
-
 class SingleNeuralNet():
     '''
     A single neural network with fixed hyperparameters/topology.
@@ -47,14 +46,14 @@ class SingleNeuralNet():
         start = time.time()
 
         self.save_archive_filename = (
-            mlu.archive_foldername
-            + "neural_net_archive_"
-            + mlu.datetime_to_string(datetime.datetime.now())
-            + "_"
-            # We include 6 random bytes for deduplication in case multiple nets
-            # are created at the same time.
-            + base64.urlsafe_b64encode(nr.bytes(6)).decode()
-            + ".ckpt")
+                mlu.archive_foldername
+                + "neural_net_archive_"
+                + mlu.datetime_to_string(datetime.datetime.now())
+                + "_"
+                # We include 6 random bytes for deduplication in case multiple nets
+                # are created at the same time.
+                + base64.urlsafe_b64encode(nr.bytes(6)).decode()
+                + ".ckpt")
 
         self.log.info("Constructing net")
         self.graph = tf.Graph()
@@ -74,28 +73,23 @@ class SingleNeuralNet():
         self.losses_list = losses_list
 
         with self.graph.as_default():
-            # Inputs
-            self.input_placeholder = tf.placeholder(
-                tf.float32, shape=[None, self.num_params])
-            self.output_placeholder = tf.placeholder(
-                tf.float32, shape=[None, 1])
-            self.keep_prob_placeholder = tf.placeholder_with_default(
-                1., shape=[])
-            self.regularisation_coefficient_placeholder = tf.placeholder_with_default(
-                0., shape=[])
+            ## Inputs
+            self.input_placeholder = tf.placeholder(tf.float32, shape=[None, self.num_params])
+            self.output_placeholder = tf.placeholder(tf.float32, shape=[None, 1])
+            self.keep_prob_placeholder = tf.placeholder_with_default(1., shape=[])
+            self.regularisation_coefficient_placeholder = tf.placeholder_with_default(0., shape=[])
 
-            # Initialise the network
+            ## Initialise the network
 
             weights = []
             biases = []
 
             # Input + internal nodes
             prev_layer_dim = self.num_params
-            bias_stddev = 0.5
+            bias_stddev=0.5
             for (i, dim) in enumerate(layer_dims):
                 weights.append(tf.Variable(
-                    tf.random_normal([prev_layer_dim, dim],
-                                     stddev=1.4/np.sqrt(prev_layer_dim)),
+                    tf.random_normal([prev_layer_dim, dim], stddev=1.4/np.sqrt(prev_layer_dim)),
                     name="weight_"+str(i)))
                 biases.append(tf.Variable(
                     tf.random_normal([dim], stddev=bias_stddev),
@@ -104,8 +98,7 @@ class SingleNeuralNet():
 
             # Output node
             weights.append(tf.Variable(
-                tf.random_normal([prev_layer_dim, 1],
-                                 stddev=1.4/np.sqrt(prev_layer_dim)),
+                tf.random_normal([prev_layer_dim, 1], stddev=1.4/np.sqrt(prev_layer_dim)),
                 name="weight_out"))
             biases.append(tf.Variable(
                 tf.random_normal([1], stddev=bias_stddev),
@@ -116,16 +109,15 @@ class SingleNeuralNet():
                 prev_h = input_var
                 for w, b, act in zip(weights[:-1], biases[:-1], layer_activations):
                     prev_h = tf.nn.dropout(
-                        act(tf.matmul(prev_h, w) + b),
-                        keep_prob=self.keep_prob_placeholder)
+                          act(tf.matmul(prev_h, w) + b),
+                          keep_prob=self.keep_prob_placeholder)
                 return tf.matmul(prev_h, weights[-1]) + biases[-1]
 
-            # Define tensors for evaluating the output var and gradient on the full input
+            ## Define tensors for evaluating the output var and gradient on the full input
             self.output_var = get_output_var(self.input_placeholder)
-            self.output_var_gradient = tf.gradients(
-                self.output_var, self.input_placeholder)
+            self.output_var_gradient = tf.gradients(self.output_var, self.input_placeholder)
 
-            # Declare common loss functions
+            ## Declare common loss functions
 
             # Get the raw loss given the expected and actual output vars
             def get_loss_raw(expected, actual):
@@ -135,14 +127,13 @@ class SingleNeuralNet():
 
             # Regularisation component of the loss.
             loss_reg = (self.regularisation_coefficient_placeholder
-                        * tf.reduce_mean([tf.nn.l2_loss(W) for W in weights]))
+                * tf.reduce_mean([tf.nn.l2_loss(W) for W in weights]))
 
-            # Define tensors for evaluating the loss on the full input
-            self.loss_raw = get_loss_raw(
-                self.output_placeholder, self.output_var)
+            ## Define tensors for evaluating the loss on the full input
+            self.loss_raw = get_loss_raw(self.output_placeholder, self.output_var)
             self.loss_total = self.loss_raw + loss_reg
 
-            # Training
+            ## Training
             self.train_step = tf.train.AdamOptimizer().minimize(self.loss_total)
 
             # Initialiser for ... initialising
@@ -150,8 +141,7 @@ class SingleNeuralNet():
 
             # Saver for saving and restoring params
             self.saver = tf.train.Saver(write_version=tf.train.SaverDef.V2)
-        self.log.debug("Finished constructing net in: " +
-                       str(time.time() - start))
+        self.log.debug("Finished constructing net in: " + str(time.time() - start))
 
     def destroy(self):
         self.tf_session.close()
@@ -214,8 +204,7 @@ class SingleNeuralNet():
         # - else start from the top
         start = time.time()
         while True:
-            threshold = (1 - self.train_threshold_ratio) * \
-                self._loss(params, costs)[0]
+            threshold = (1 - self.train_threshold_ratio) * self._loss(params, costs)[0]
             self.log.debug("Training with threshold " + str(threshold))
             if threshold == 0:
                 break
@@ -225,8 +214,7 @@ class SingleNeuralNet():
                 # Split the data into random batches, and train on each batch
                 indices = np.random.permutation(len(params))
                 for j in range(int(math.ceil(len(params) / self.batch_size))):
-                    batch_indices = indices[j *
-                                            self.batch_size: (j + 1) * self.batch_size]
+                    batch_indices = indices[j * self.batch_size : (j + 1) * self.batch_size]
                     batch_input = lparams[batch_indices]
                     batch_output = lcosts[batch_indices]
                     self.tf_session.run(self.train_step,
@@ -239,7 +227,7 @@ class SingleNeuralNet():
                     (l, ul) = self._loss(params, costs)
                     self.losses_list.append(l)
                     self.log.info('Fit neural network with total training cost ' + str(l)
-                                  + ', with unregularized cost ' + str(ul))
+                            + ', with unregularized cost ' + str(ul))
             self.log.debug("Run trained for: " + str(time.time() - run_start))
 
             (l, ul) = self._loss(params, costs)
@@ -258,11 +246,11 @@ class SingleNeuralNet():
             costs (array): array of costs (associated with the corresponding parameters)
         '''
         return self.tf_session.run(self.loss_total,
-                                   feed_dict={self.input_placeholder: params,
-                                              self.output_placeholder: [[c] for c in costs],
-                                              })
+                                  feed_dict={self.input_placeholder: params,
+                                  self.output_placeholder: [[c] for c in costs],
+                                  })
 
-    def predict_cost(self, params):
+    def predict_cost(self,params):
         '''
         Produces a prediction of cost from the neural net at params.
 
@@ -271,14 +259,14 @@ class SingleNeuralNet():
         '''
         return self.tf_session.run(self.output_var, feed_dict={self.input_placeholder: [params]})[0][0]
         #runs = 100
-        # Do some runs with dropout, and return the smallest. This is kind of LCB.
-        # results = [y[0] for y in self.tf_session.run(self.output_var, feed_dict={
+        ## Do some runs with dropout, and return the smallest. This is kind of LCB.
+        #results = [y[0] for y in self.tf_session.run(self.output_var, feed_dict={
         #        self.input_placeholder: [params] * runs,
         #        self.keep_prob_placeholder: 0.99})]
-        # results.sort()
-        # return results[int(runs * 0.2)]
+        #results.sort()
+        #return results[int(runs * 0.2)]
 
-    def predict_cost_gradient(self, params):
+    def predict_cost_gradient(self,params):
         '''
         Produces a prediction of the gradient of the cost function at params.
 
@@ -324,21 +312,21 @@ class SampledNeuralNet():
 
     def load(self, archive):
         for i, n in enumerate(self.nets):
-            # n.load(archive[str(i)])
+            #n.load(archive[str(i)])
             n.load(archive)
 
     def save(self):
         return self.nets[0].save()
         #ret = {}
-        # for i, n in enumerate(self.nets):
+        #for i, n in enumerate(self.nets):
         #    ret[str(i)] = n.save()
-        # return ret
+        #return ret
 
     def fit(self, params, costs, epochs):
         self.fit_count += 1
         # Every per'th fit we clear out a net and re-train it.
         #per = 2
-        # if self.fit_count % per == 0:
+        #if self.fit_count % per == 0:
         #    index = int(self.fit_count / per) % len(self.nets)
         #    self.log.debug("Re-creating net " + str(index))
         #    self.nets[index].destroy()
@@ -351,26 +339,25 @@ class SampledNeuralNet():
     def cross_validation_loss(self, params, costs):
         return np.mean([n.cross_validation_loss(params, costs) for n in self.nets])
 
-    def predict_cost(self, params):
+    def predict_cost(self,params):
         if self.opt_net:
             return self.opt_net.predict_cost(params)
         else:
             return self._random_net().predict_cost(params)
-        # return np.mean([n.predict_cost(params) for n in self.nets])
+        #return np.mean([n.predict_cost(params) for n in self.nets])
 
-    def predict_cost_gradient(self, params):
+    def predict_cost_gradient(self,params):
         if self.opt_net:
             return self.opt_net.predict_cost_gradient(params)
         else:
             return self._random_net().predict_cost_gradient(params)
-        # return np.mean([n.predict_cost_gradient(params) for n in self.nets])
+        #return np.mean([n.predict_cost_gradient(params) for n in self.nets])
 
     def start_opt(self):
         self.opt_net = self._random_net()
 
     def stop_opt(self):
         self.opt_net = None
-
 
 class NeuralNet():
     '''
@@ -391,8 +378,8 @@ class NeuralNet():
     '''
 
     def __init__(self,
-                 num_params=None,
-                 fit_hyperparameters=False):
+                 num_params = None,
+                 fit_hyperparameters = False):
 
         self.log = logging.getLogger(__name__)
         self.log.info('Initialising neural network impl')
@@ -404,8 +391,8 @@ class NeuralNet():
         self.num_params = num_params
         self.fit_hyperparameters = fit_hyperparameters
 
-        self.initial_epochs = 100
-        self.subsequent_epochs = 20
+        self.initial_epochs = 200
+        self.subsequent_epochs = 50
 
         # Variables for tracking the current state of hyperparameter fitting.
         self.last_hyperfit = 0
@@ -424,6 +411,7 @@ class NeuralNet():
     # Private helper methods.
 
     def _make_net(self, reg):
+        print("#################Making Net #############")
         '''
         Helper method to create a new net with a specified regularisation coefficient. The net is not
         initialised, so you must call init() or load() on it before any other method.
@@ -433,16 +421,28 @@ class NeuralNet():
         '''
         def gelu_fast(_x):
             return 0.5 * _x * (1 + tf.tanh(tf.sqrt(2 / np.pi) * (_x + 0.044715 * tf.pow(_x, 3))))
-
-        def creator(): return SingleNeuralNet(
-            self.num_params,
-            [64]*5, [gelu_fast]*5,
-            0.2,  # train_threshold_ratio
-            48*3,  # batch_size
-            1.,  # keep_prob
-            reg,
-            self.losses_list)
+        creator = lambda: SingleNeuralNet(
+                    self.num_params,
+                    [48]*5,
+                    [gelu_fast]*5,
+                    0.9999, # train_threshold_ratio
+                    48, # batch_size
+                    0.6, # keep_prob
+                    reg,
+                    self.losses_list)
         return SampledNeuralNet(creator, 1)
+        # num_params: The number of params.
+        # layer_dims: The number of nodes in each layer.
+        # layer_activations: The activation function for each layer.
+        # train_threshold_ratio: (Relative) loss improvement per train under which training should
+        #     terminate. E.g. 0.1 means we will train (train_epochs at a time) until the improvement
+        #     in loss is less than 0.1 of the loss when that train started (so lower values mean we
+        #     will train for longer). Alternatively, you can think of this as the smallest gradient
+        #     we'll allow before deciding that the loss isn't improving any more.
+        # batch_size: The training batch size.
+        # keep_prob: The dropoout keep probability.
+        # regularisation_coefficient: The regularisation coefficient.
+        # losses_list: A list to which this object will append training losses.
 
     def _fit_scaler(self):
         '''
@@ -456,7 +456,7 @@ class NeuralNet():
 
         self._param_scaler.fit(self.scaler_samples[0])
         # Cost is scalar but numpy doesn't like scalars, so reshape to be a 0D vector instead.
-        self._cost_scaler.fit(np.array(self.scaler_samples[1]).reshape(-1, 1))
+        self._cost_scaler.fit(np.array(self.scaler_samples[1]).reshape(-1,1))
 
         self._mean_offset = 0
 
@@ -475,10 +475,10 @@ class NeuralNet():
     def _scale_params_and_cost_list(self, params_list_unscaled, cost_list_unscaled):
         params_list_scaled = self._param_scaler.transform(params_list_unscaled)
         # As above, numpy doesn't like scalars, so we need to do some reshaping.
-        cost_vector_list_unscaled = np.array(cost_list_unscaled).reshape(-1, 1)
+        cost_vector_list_unscaled = np.array(cost_list_unscaled).reshape(-1,1)
         cost_vector_list_scaled = (self._cost_scaler.transform(cost_vector_list_unscaled)
-                                   + self._mean_offset)
-        cost_list_scaled = cost_vector_list_scaled[:, 0]
+                + self._mean_offset)
+        cost_list_scaled = cost_vector_list_scaled[:,0]
         return params_list_scaled, cost_list_scaled
 
     def _scale_params(self, params_unscaled):
@@ -572,8 +572,7 @@ class NeuralNet():
         else:
             first_fit = False
 
-        all_params, all_costs = self._scale_params_and_cost_list(
-            all_params, all_costs)
+        all_params, all_costs = self._scale_params_and_cost_list(all_params, all_costs)
 
         if self.fit_hyperparameters:
             # Every 20 fits (starting at 5, just because), re-fit the hyperparameters
@@ -589,12 +588,10 @@ class NeuralNet():
                 cv_params = all_params[cv_size:]
                 cv_costs = all_costs[cv_size:]
 
-                orig_cv_loss = self.net.cross_validation_loss(
-                    cv_params, cv_costs)
+                orig_cv_loss = self.net.cross_validation_loss(cv_params, cv_costs)
                 best_cv_loss = orig_cv_loss
 
-                self.log.debug(
-                    "Fitting regularisation, current cv loss=" + str(orig_cv_loss))
+                self.log.debug("Fitting regularisation, current cv loss=" + str(orig_cv_loss))
 
                 # Try a bunch of different regularisation parameters, switching to a new one if it
                 # does significantly better on the cross validation set than the old one.
@@ -602,12 +599,10 @@ class NeuralNet():
                     net = self._make_net(r)
                     net.init()
                     net.fit(train_params, train_costs, self.initial_epochs)
-                    this_cv_loss = net.cross_validation_loss(
-                        cv_params, cv_costs)
+                    this_cv_loss = net.cross_validation_loss(cv_params, cv_costs)
                     if this_cv_loss < best_cv_loss and this_cv_loss < 0.1 * orig_cv_loss:
                         best_cv_loss = this_cv_loss
-                        self.log.debug("Switching to reg=" +
-                                       str(r) + ", cv loss=" + str(best_cv_loss))
+                        self.log.debug("Switching to reg=" + str(r) + ", cv loss=" + str(best_cv_loss))
                         self.last_net_reg = r
                         self.net.destroy()
                         self.net = net
@@ -615,11 +610,11 @@ class NeuralNet():
                         net.destroy()
 
         self.net.fit(
-            all_params,
-            all_costs,
-            self.initial_epochs if first_fit else self.subsequent_epochs)
+                all_params,
+                all_costs,
+                self.initial_epochs if first_fit else self.subsequent_epochs)
 
-    def predict_cost(self, params):
+    def predict_cost(self,params):
         '''
         Produces a prediction of cost from the neural net at params.
 
@@ -630,7 +625,7 @@ class NeuralNet():
         '''
         return self._unscale_cost(self.net.predict_cost(self._scale_params(params)))
 
-    def predict_cost_gradient(self, params):
+    def predict_cost_gradient(self,params):
         '''
         Produces a prediction of the gradient of the cost function at params.
 

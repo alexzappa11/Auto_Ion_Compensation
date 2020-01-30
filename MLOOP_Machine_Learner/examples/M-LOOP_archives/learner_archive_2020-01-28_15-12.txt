@@ -1,0 +1,35 @@
+archive_type='gaussian_process_learner'
+num_params=3
+min_boundary=array([-2., -2., -2.])
+max_boundary=array([2., 2., 2.])
+start_datetime='2020-01-28_15-12'
+cost_has_noise=True
+length_scale_history=[]
+noise_level_history=[]
+bad_run_indexs=[]
+bias_func_cycle=4
+bias_func_cost_factor=[1.0, 1.0, 1.0, 1.0]
+bias_func_uncer_factor=[0.0, 1.0, 2.0, 3.0]
+generation_num=4
+search_precision=1e-06
+parameter_searches=10
+hyperparameter_searches=10
+bad_uncer_frac=0.1
+trust_region=nan
+has_trust_region=False
+predict_global_minima_at_end=True
+all_params=array([], dtype=float64)
+all_costs=array([], dtype=float64)
+all_uncers=array([], dtype=float64)
+best_cost=inf
+best_params=nan
+best_index=0
+worst_cost=-inf
+worst_index=0
+cost_range=inf
+fit_count=0
+costs_count=0
+params_count=0
+update_hyperparameters=True
+length_scale=array([1., 1., 1.])
+noise_level=1.0

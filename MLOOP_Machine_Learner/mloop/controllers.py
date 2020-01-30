@@ -26,6 +26,7 @@ class ControllerInterrupt(Exception):
 def create_controller(interface,
                       controller_type='gaussian_process',
                       **controller_config_dict):
+    
     '''
     Start the controller with the options provided.
     Args:
@@ -58,6 +59,7 @@ def create_controller(interface,
     return controller
 
 class Controller():
+    print("####################################")
     '''
     Abstract class for controllers. The controller controls the entire M-LOOP process. The controller for each algorithm all inherit from this class. The class stores a variety of data which all algorithms use and also all of the achiving and saving features.
     In order to implement your own controller class the minimum requirement is to add a learner to the learner variable. And implement the next_parameters method, where you provide the appropriate information to the learner and get the next parameters.
@@ -568,7 +570,7 @@ class MachineLearnerController(Controller):
                                                             min_boundary=min_boundary,
                                                             max_boundary=max_boundary,
                                                             trust_region=trust_region,
-                                                            evolution_strategy='best2',
+                                                            evolution_strategy='best1',
                                                             learner_archive_filename=None,
                                                             learner_archive_file_type=learner_archive_file_type,
                                                             **self.remaining_kwargs)
@@ -652,6 +654,8 @@ class MachineLearnerController(Controller):
         self._put_params_and_out_dict(next_params)
         self.save_archive()
         self._get_cost_and_in_dict()
+
+       
         
         while (self.num_in_costs < self.num_training_runs) and self.check_end_conditions():
             self.log.info('Run:' + str(self.num_in_costs +1) + ' (training)')
@@ -701,6 +705,7 @@ class MachineLearnerController(Controller):
 
 
     def _shut_down(self):
+        print("########################### Shutdown ################")
         '''
         Shutdown and clean up resources of the machine learning controller.
         '''
@@ -713,6 +718,7 @@ class MachineLearnerController(Controller):
         while not self.ml_learner_params_queue.empty():
             last_dict = self.ml_learner_params_queue.get_nowait()
         if isinstance(last_dict, dict):
+            
             try:
                 self.predicted_best_parameters = last_dict['predicted_best_parameters']
                 self.predicted_best_cost = last_dict['predicted_best_cost']

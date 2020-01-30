@@ -1,0 +1,31 @@
+archive_type='neural_net_learner'
+num_params=3
+min_boundary=array([-2., -2., -2.])
+max_boundary=array([2., 2., 2.])
+start_datetime='2020-01-28_15-36'
+bad_run_indexs=[]
+generation_num=3
+search_precision=1e-06
+parameter_searches=10
+hyperparameter_searches=10
+bad_uncer_frac=0.1
+trust_region=nan
+has_trust_region=False
+predict_global_minima_at_end=False
+all_params=array([], dtype=float64)
+all_costs=array([], dtype=float64)
+all_uncers=array([], dtype=float64)
+best_cost=inf
+best_params=nan
+best_index=0
+worst_cost=-inf
+worst_index=0
+cost_range=inf
+costs_count=0
+params_count=0
+length_scale=1
+noise_level=1
+cost_scaler_init_index=None
+net_0={'last_hyperfit': 0, 'last_net_reg': 1e-08, 'losses_list': [], 'scaler_samples': None, 'net': {'saver_path': './M-LOOP_archives/neural_net_archive_2020-01-28_15-36_AG74giy-.ckpt'}}
+net_1={'last_hyperfit': 0, 'last_net_reg': 1e-08, 'losses_list': [], 'scaler_samples': None, 'net': {'saver_path': './M-LOOP_archives/neural_net_archive_2020-01-28_15-36_Z50f4q6u.ckpt'}}
+net_2={'last_hyperfit': 0, 'last_net_reg': 1e-08, 'losses_list': [], 'scaler_samples': None, 'net': {'saver_path': './M-LOOP_archives/neural_net_archive_2020-01-28_15-36_58iy7BKA.ckpt'}}
