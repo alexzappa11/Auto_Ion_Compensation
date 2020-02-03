@@ -423,12 +423,12 @@ class NeuralNet():
             return 0.5 * _x * (1 + tf.tanh(tf.sqrt(2 / np.pi) * (_x + 0.044715 * tf.pow(_x, 3))))
         creator = lambda: SingleNeuralNet(
                     self.num_params,
-                    [48]*5,
-                    [gelu_fast]*5,
+                    [48]*5, # layer_dims:
+                    [gelu_fast]*5,  # layer_activations
                     0.9999, # train_threshold_ratio
                     48, # batch_size
                     0.6, # keep_prob
-                    reg,
+                    1e-7, # regularisation_coefficient:  optimize the value of regularization coefficient in order to obtain a well-fitted model.
                     self.losses_list)
         return SampledNeuralNet(creator, 1)
         # num_params: The number of params.
@@ -441,8 +441,6 @@ class NeuralNet():
         #     we'll allow before deciding that the loss isn't improving any more.
         # batch_size: The training batch size.
         # keep_prob: The dropoout keep probability.
-        # regularisation_coefficient: The regularisation coefficient.
-        # losses_list: A list to which this object will append training losses.
 
     def _fit_scaler(self):
         '''
@@ -596,13 +594,14 @@ class NeuralNet():
                 # Try a bunch of different regularisation parameters, switching to a new one if it
                 # does significantly better on the cross validation set than the old one.
                 for r in [0.001, 0.01, 0.1, 1, 10]:
+                    print("Running Loop ")
                     net = self._make_net(r)
                     net.init()
                     net.fit(train_params, train_costs, self.initial_epochs)
                     this_cv_loss = net.cross_validation_loss(cv_params, cv_costs)
                     if this_cv_loss < best_cv_loss and this_cv_loss < 0.1 * orig_cv_loss:
                         best_cv_loss = this_cv_loss
-                        self.log.debug("Switching to reg=" + str(r) + ", cv loss=" + str(best_cv_loss))
+                        print("Switching to reg=" + str(r) + ", cv loss=" + str(best_cv_loss))
                         self.last_net_reg = r
                         self.net.destroy()
                         self.net = net

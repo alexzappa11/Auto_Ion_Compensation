@@ -1,6 +1,7 @@
 
 import subprocess as sub
 import random
+import numpy as np
 
 
 class photon_count():
@@ -11,7 +12,7 @@ class photon_count():
         exposure=50,  # -e exposure in ms
         confidence_bound=10  # -c confidence bound
     ):
-        self.channel = str(channel)
+        self.channel = channel
         self.readtime = str(readtime)
         self.exposure = str(exposure)
         self.confidence_bound = str(confidence_bound)
@@ -39,4 +40,7 @@ class photon_count():
         time.sleep(0.01)  # measurement delay
         return -random.randint(2000, 5000)
 
+##### For testing Purposes ensure this is commented before running any external controller ###
+# PMT = photon_count()
+# print(PMT.get_count())
 
