@@ -17,7 +17,7 @@ cmap = plt.get_cmap('hsv')
 run_label = 'Run number'
 cost_label = 'Cost'
 generation_label = 'Generation number'
-scale_param_label = 'Min (0) to max (1) parameters'
+scale_param_label = '$ V_0 - V_n $'
 param_label = 'Parameter'
 log_length_scale_label = 'Log of length scale'
 noise_label = 'Noise level'
@@ -166,10 +166,12 @@ class ControllerVisualizer():
         self.num_params = int(controller_dict['num_params'])
         self.min_boundary = np.squeeze(np.array(controller_dict['min_boundary']))
         self.max_boundary = np.squeeze(np.array(controller_dict['max_boundary']))
+        self.startingParams = np.array(controller_dict['out_params'])[0]
         
         if np.all(np.isfinite(self.min_boundary)) and np.all(np.isfinite(self.min_boundary)):
             self.finite_flag = True
-            self.param_scaler = lambda p: (p-self.min_boundary)/(self.max_boundary - self.min_boundary)
+            # self.param_scaler = lambda p: (p-self.min_boundary)/(self.max_boundary - self.min_boundary) #scale params from 0 to 1
+            self.param_scaler = lambda p: (p-self.startingParams) #scale params as difference from starting
             self.scaled_params = np.array([self.param_scaler(self.out_params[ind,:]) for ind in range(self.num_out_params)])
         else:
             self.finite_flag = False
@@ -209,7 +211,10 @@ class ControllerVisualizer():
             for ind in range(self.num_params):
                 plt.plot(self.out_numbers,self.scaled_params[:,ind],'o',color=self.param_colors[ind])
                 plt.ylabel(scale_param_label)
-                plt.ylim((0,1))
+                # plt.ylim((0,1)) #range for normalised params
+                plt.ylim((-0.5,0.5)) #range for params as distance from initial
+
+
         else:
             for ind in range(self.num_params):
                 plt.plot(self.out_numbers,self.out_params[:,ind],'o',color=self.param_colors[ind])

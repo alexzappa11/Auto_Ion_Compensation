@@ -15,18 +15,23 @@ class Ion_Trap_control():
         channel=5,  # PMT channel for where the photons are being read from
         readtime=0.1,  # -t time in s
         exposure=50,  # -e exposure in ms
-        confidence_bound=10  # -c confidence bound
+        confidence_bound=10,  # -c confidence bound
+        threshold=0.4,  # maximum drop in photon count before the program terminates
+        istest=False  # set to true if running test without PMT of DAQ connected
+
     ):
         # Initialise PMT parameters
         self.channel = channel
         self.readtime = str(readtime)
         self.exposure = str(exposure)
         self.confidence_bound = str(confidence_bound)
+        self.istest = istest
+
+        # multiply the threshold with the starting photon count to get minimum allowed photon count
+        if not self.istest:
+            self.minimumAllowedPhotonCount = self._get_count()*threshold
 
         # Inititalise input parameters for the voltage.
-        # The input voltage desired is initialised in the write voltage function when the actual voltage is passed through the function
-        # self.input_voltage = np.zeros(48)
-
         # Assign the slots from the slot configuration this will vary depending on the slots you use for the DAQ
         self.PXI1Slot2 = 'PXI1Slot2/ao0, PXI1Slot2/ao1, PXI1Slot2/ao2, PXI1Slot2/ao3, PXI1Slot2/ao4, PXI1Slot2/ao5, PXI1Slot2/ao6, PXI1Slot2/ao7'
         self.PXI1Slot3 = 'PXI1Slot3/ao0, PXI1Slot3/ao1, PXI1Slot3/ao2, PXI1Slot3/ao3, PXI1Slot3/ao4, PXI1Slot3/ao5, PXI1Slot3/ao6, PXI1Slot3/ao7'
@@ -40,8 +45,6 @@ class Ion_Trap_control():
         self.PXI1Slot11 = 'PXI1Slot11/ao0, PXI1Slot11/ao1, PXI1Slot11/ao2, PXI1Slot11/ao3, PXI1Slot11/ao4, PXI1Slot11/ao5, PXI1Slot11/ao6, PXI1Slot11/ao7'
         self.PXI1Slot12 = 'PXI1Slot12/ao0, PXI1Slot12/ao1, PXI1Slot12/ao2, PXI1Slot12/ao3, PXI1Slot12/ao4, PXI1Slot12/ao5, PXI1Slot12/ao6, PXI1Slot12/ao7'
         self.PXI1Slot13 = 'PXI1Slot13/ao0, PXI1Slot13/ao1, PXI1Slot13/ao2, PXI1Slot13/ao3, PXI1Slot13/ao4, PXI1Slot13/ao5, PXI1Slot13/ao6, PXI1Slot13/ao7'
-
-
 
     def _get_count(self):
         """Reads photon count: read photon count from executable for PMTid800 software. Command is found in manual"""
@@ -63,10 +66,15 @@ class Ion_Trap_control():
         except:
             print("Photon Read Error: Photon Count returned as photon count = 0")
             photons = 0
+            exit()
 
         return photons
 
     def _write_voltage(self, input_voltage):
+
+        if not len(input_voltage) == 48:
+            print("Parameter array length is not 48")
+            exit()
 
         """Given a voltage for the DAQ, this will be appled to the DAQ and the photon count will be returned """
         self.input_voltage = input_voltage
@@ -143,20 +151,26 @@ class Ion_Trap_control():
         except:
             print("Voltage Write Error, ensure DAQ is connected")
 
-
           # Calls the get count function to return the current photon count after the voltages are applied
+
     def Ion_function(self, input_voltage):
         """Returns the photon count with the given inputted voltage to the DAQ"""
-        self._write_voltage(input_voltage) #write voltage values to the DAQ
-        self.photon_count = self._get_count() #Get the photon count
-        return self.photon_count #return photon count
 
+        if self.istest:
+             # set photon count to random if istest is true
+            self.photon_count = random.randint(0, 2000)       
+        else:
+             # write voltage values to the DAQ
+            self._write_voltage(input_voltage)
+            self.photon_count = self._get_count()  # Get the photon count           
+
+        return self.photon_count  # return photon count
 
 
 ##### For testing Purposes ensure this is commented before running any external controller ###
-Ion_Trap_control = Ion_Trap_control()
+# Ion_Trap_control = Ion_Trap_control()
 # best_voltage =  np.array([-0.76946399,  0.03126644,  0.01227583, -0.02074481, -0.81386208,        0.84565323,  0.33459753, -0.27779589,  0.31202691, -0.31500174,        0.35165478, -0.32228858,  0.33917303, -0.3041594 ,  0.32604872,       -0.30917424,  0.31003287, -0.32733473,  0.36496983, -0.31687441,        0.33490359, -0.31542131,  0.3440404 , -0.3266181 ,  0.32299595,       -0.33479072,  0.32458658, -0.31810331,  0.3304424 , -0.28309829,        2.74354768,  2.17268162,  0.94281746,  0.48938595, -3.16064925,       -3.52517838, -1.55874336, -1.94320054,  2.05913316,  1.57945178,        1.60988956,  1.0389809 ,  0.32177613, -0.34905581,  0.34300037,       -0.32592017,  0.34501902, -0.29680224])
 #
 # photonCount = Ion_Trap_control.Ion_function(best_voltage)
-photonCount = Ion_Trap_control._get_count()
-print(photonCount)
+# photonCount = Ion_Trap_control._get_count()
+# print(photonCount)

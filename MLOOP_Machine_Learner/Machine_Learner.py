@@ -39,6 +39,13 @@ class CustomInterface(mli.Interface):
 
         self.experiment_function = experiment_function
 
+        # Get the voltage from the Adam Optimiser program and store it as the starting voltage
+        # get_Voltage(weight_Params, position)
+        final_voltage = pd.read_csv(
+            '../Adam/VoltagePlaceHolder.csv', sep=',', header=None)
+        self.starting_voltage = np.array(final_voltage.iloc[:, 0], dtype=float)
+        print("Optimising from", self.starting_voltage)
+
     # this method is called whenever M-LOOP wants to run an experiment
     def get_next_cost_dict(self, params_dict):
 
@@ -50,7 +57,8 @@ class CustomInterface(mli.Interface):
 
         # Get cost from the Ion Function
         cost = self.experiment_function.Ion_function(params)
-        print("Cost: ", cost)# !!!!Param length must be 48!!!
+
+        print("Cost: ", cost)  # !!!!Param length must be 48!!!
 
         # Define the uncertainty
         uncer = 0.20*3000
@@ -71,92 +79,45 @@ class CustomInterface(mli.Interface):
 
 
 def main():
-    interface = CustomInterface(mvq.quadratic(48), itf.Ion_Trap_control())
-    # starting_voltage =  np.array([-7.82E-01,0.00E+00, 0.00E+00,0.00E+00, -7.98E-01, 7.94E-01, 3.20E-01, 3.15E-01, 3.20E-01, -3.15E-01, 3.20E-01, -3.15E-01, 3.20E-01, -3.15E-01, 3.20E-01, -3.15E-01, 3.20E-01,-3.15E-01,3.20E-01,-3.15E-01,3.20E-01,-3.15E-01,3.20E-01,-3.15E-01,3.20E-01,-3.15E-01,3.20E-01,-3.15E-01,3.20E-01,-3.15E-01,2.72E+00,2.17E+00,9.31E-01,4.74E-01,-3.13E+00,-3.51E+00,-1.53E+00,-1.93E+00,2.08E+00,1.57E+00,1.60E+00,1.01E+00,3.20E-01,-3.15E-01,3.20E-01,-3.15E-01,3.20E-01,-3.15E-01])
-
-    final_voltage = pd.read_csv('../Adam/VoltagePlaceHolder.csv', sep=',', header=None)  # get_Voltage(weight_Params, position)
-    starting_voltage = np.array(final_voltage.iloc[:, 0], dtype=float)
-    print(starting_voltage)
+    interface = CustomInterface(mvq.quadratic(
+        48), itf.Ion_Trap_control(istest=True))  # initialise the interface
 
     NeuralNetLearningController = mlc.create_controller(
         interface,
         controller_type='neural_net',
         training_type='differential_evolution',
         # num_training_runs=100,
-        max_num_runs=600,
+        max_num_runs=10,
         no_delay=True,  # If True, there is never any delay between a returned cost and the next parameters to run for the experiment. In practice, this means if the machine learning learner has not prepared the next parameters in time the learner defined by the initial training source is used instead. If false, the controller will wait for the machine learning learner to predict the next parameters and there may be a delay between runs.
         num_params=48,
-        min_boundary= starting_voltage - 0.5 ,
-        max_boundary=starting_voltage +0.5,
-        trust_region=0.01,  # maximum move % from best params,
+        min_boundary=interface.starting_voltage - 0.5,
+        max_boundary=interface.starting_voltage + 0.5,
+        trust_region=0.01,  # maximum move % of cost from best params
+        cost_has_noise=True,
         fit_hyperparameters=False,
         visualizations=True,
-        # first_params=interface.min_parameters()*1.2,
-        first_params=starting_voltage,
-        cost_has_noise = True
-
-
+        # first_params=interface.min_parameters()*1.2, #use this for simulation
+        first_params=interface.starting_voltage
     )
-    # differential_evolution = mlc.create_controller(
-    #     interface,
-    #     controller_type='differential_evolution',
-    #     # training_type='differential_evolution',
-    #     # num_training_runs=10,
-    #     max_num_runs=126,
-    #     no_delay=True,
-    #     num_params=48,
-    #     min_boundary=np.full(48, -3),
-    #     max_boundary=np.full(48, 3),
-    #     trust_region=0.1,  # maximum move % from best params,
-    #     fit_hyperparameters=False,
-    #     visualizations=True
-    #
-    # )
-    # differential_evolution.optimize()
+
     NeuralNetLearningController.optimize()
+    finalCost = interface.experiment_function.Ion_function(
+        NeuralNetLearningController.best_params)  # Apply the best params form the run
+    print("Best parameters Applied with a final cost of: ", finalCost)
+
     mlv.show_all_default_visualizations(NeuralNetLearningController)
 
-    # TODO Print distance actual is away from approximator scaled difference in the random function
+    # TODO Print distance actual is away from approximation scaled difference in the simulation function
     # TODO Safety Net
-    # TODO Apply the best found voltage
     # TODO Load in the trained Network and have it find the optimal point (this will change though if the electric field in the trap changes)
-    # TODO Graph to display the change in voltages from initial
-    # TODO break out of loop if photon count program open
-    # TODO See what the parameter plot is showing
     # TODO Live graph of costs
 
     # NeuralNetLearningController.print_results()
     # NeuralNetLearningController.ml_learner.neural_net[0]
 
+    # For simulation Testing
     # print("Actual minimum value is: ", interface.min())
     # print("Actual Parameters at minimum value: ", interface.min_parameters())
-
-    # learner = mll.NeuralNetLearner(
-    #     num_params=48,
-    #     min_boundary=np.full(48, -10),
-    #     max_boundary=np.full(48, 10),
-    #     learner_archive_filename=default_learner_archive_filename,
-    #     learner_archive_file_type=default_learner_archive_file_type,
-    #     start_datetime=None,
-    #     trust_region=0.01,
-    #     default_bad_cost=None,
-    #     default_bad_uncertainty=None,
-    #     nn_training_filename=None,
-    #     nn_training_file_type='txt',
-    #     minimum_uncertainty=1e-8,
-    #     predict_global_minima_at_end=True,
-    # )
-
-    # NeuralNetLearningController.optimize()
-    # NeuralNetLearningController.print_results()
-    # print("minimum value is: ", interface.min())
-    # print("Parameters at minimum value: ", interface.min_parameters())
-    # learner.all_params = NeuralNetLearningController.out_params
-    # learner.all_costs = NeuralNetLearningController.in_costs
-    # learner.create_neural_net()
-    # learner.run()
-    # learner.find_global_minima()
-    # print(learner.predicted_best_cost)
 
 
 if __name__ == '__main__':
