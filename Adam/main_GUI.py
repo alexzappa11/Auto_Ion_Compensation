@@ -287,6 +287,7 @@ def write_voltage(final_voltage):
 
 
 def take_photon():
+
     # time.sleep(0.01)
     # return -random.randint(2000, 5000)
     channel = 5  # PMT channel for where the photons are being read from
@@ -543,11 +544,16 @@ def adam(function_new_output, function_output, function_read_ouput, parameters_t
 
         theta_r = np.around(theta_0, decimals=4)
 
-        list_voltages.delete(0, 100) 
+        list_voltages.delete(0, 100)
         for i in range(len(theta_r)):
             list_voltages.insert(i, "V" + str(i) +
                                  ": " + str(theta_r[i]))  # update the list
         window.update()
+
+        np.savetxt(r'Output_Data\parameters_each_iteration_bin.csv',
+                   parameter_array, delimiter=',')
+        np.savetxt(r'Output_Data\output_each_iteration_bin.csv',
+                   output_array, delimiter=',')
 
         # if statement to break optimisation if the photon count drops below a percentage of the starting photon count
         try:
@@ -559,9 +565,9 @@ def adam(function_new_output, function_output, function_read_ouput, parameters_t
         except:
             popupmsg("Invalid threshold")
 
-        
 
-        
+
+
 ####### Check if final photon count is less than the max over the iteration. If it is less, it applies the voltage configuration corresponding to the highest photon count ######
     if final_output > maxPhoton:
         parameter_array = np.append(
