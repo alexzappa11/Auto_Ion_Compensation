@@ -1,0 +1,31 @@
+archive_type='neural_net_learner'
+num_params=48
+min_boundary=array([-10., -10., -10., -10., -10., -10., -10., -10., -10., -10., -10.,       -10., -10., -10., -10., -10., -10., -10., -10., -10., -10., -10.,       -10., -10., -10., -10., -10., -10., -10., -10., -10., -10., -10.,       -10., -10., -10., -10., -10., -10., -10., -10., -10., -10., -10.,       -10., -10., -10., -10.])
+max_boundary=array([10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.,       10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.,       10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.,       10., 10., 10., 10., 10., 10., 10., 10., 10.])
+start_datetime='2020-01-29_12-03'
+bad_run_indexs=[]
+generation_num=3
+search_precision=1e-06
+parameter_searches=48
+hyperparameter_searches=48
+bad_uncer_frac=0.1
+trust_region=array([10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.,       10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.,       10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.,       10., 10., 10., 10., 10., 10., 10., 10., 10.])
+has_trust_region=True
+predict_global_minima_at_end=True
+all_params=array([], dtype=float64)
+all_costs=array([], dtype=float64)
+all_uncers=array([], dtype=float64)
+best_cost=inf
+best_params=nan
+best_index=0
+worst_cost=-inf
+worst_index=0
+cost_range=inf
+costs_count=0
+params_count=0
+length_scale=1
+noise_level=1
+cost_scaler_init_index=None
+net_0={'last_hyperfit': 0, 'last_net_reg': 1e-08, 'losses_list': [], 'scaler_samples': None, 'net': {'saver_path': './M-LOOP_archives/neural_net_archive_2020-01-29_12-03_FACfU3Za.ckpt'}}
+net_1={'last_hyperfit': 0, 'last_net_reg': 1e-08, 'losses_list': [], 'scaler_samples': None, 'net': {'saver_path': './M-LOOP_archives/neural_net_archive_2020-01-29_12-03_sEfthhZZ.ckpt'}}
+net_2={'last_hyperfit': 0, 'last_net_reg': 1e-08, 'losses_list': [], 'scaler_samples': None, 'net': {'saver_path': './M-LOOP_archives/neural_net_archive_2020-01-29_12-03_5RnN4o3P.ckpt'}}

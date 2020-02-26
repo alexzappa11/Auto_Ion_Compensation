@@ -32,12 +32,16 @@ compExTol = pd.read_csv(
     'Waveform_files/microwave_20121112_compExTol.csv', sep=',', header=None)
 compEyTol = pd.read_csv(
     'Waveform_files/microwave_20121112_compEyTol.csv', sep=',', header=None)
-harmonic = pd.read_csv('Waveform_files/microwave_20121112_harmonic.csv', sep=',', header=None)
+harmonic = pd.read_csv(
+    'Waveform_files/microwave_20121112_harmonic.csv', sep=',', header=None)
 uniform_Quad = pd.read_csv(
     'Waveform_files/microwave_20121112_uniform_Quad.csv', sep=',', header=None)
-BeamVxByPosition = pd.read_csv("Waveform_files/BeamVxByPosition.csv", sep=',', header=None)
-CompExByPosition = pd.read_csv("Waveform_files/CompExByPosition.csv", sep=',', header=None)
-CompEyByPosition = pd.read_csv("Waveform_files/CompEyByPosition.csv", sep=',', header=None)
+BeamVxByPosition = pd.read_csv(
+    "Waveform_files/BeamVxByPosition.csv", sep=',', header=None)
+CompExByPosition = pd.read_csv(
+    "Waveform_files/CompExByPosition.csv", sep=',', header=None)
+CompEyByPosition = pd.read_csv(
+    "Waveform_files/CompEyByPosition.csv", sep=',', header=None)
 
 CompExByPosition = np.array(CompExByPosition.iloc[:, :], dtype=float)
 CompEyByPosition = np.array(CompEyByPosition.iloc[:, :], dtype=float)
@@ -67,8 +71,6 @@ def data_processing(parameter_input, output_vals, parameter_size, num_its):
         plt.legend()
         interactive(True)
         f1.show()
-
-
 ##### Plot waveform over iterations #####
     f2 = plt.figure(2)
     waveform = []
@@ -84,7 +86,6 @@ def data_processing(parameter_input, output_vals, parameter_size, num_its):
         plt.title("$V_n-V_0$")
         f2.show()
 ### plot voltages ##
-
     parameter1 = np.array([parameter_input[i::parameter_size]
                            for i in range(0, parameter_size)])
     parameter1 = np.around(parameter1, decimals=4)
@@ -119,46 +120,70 @@ def ion_weight_function(ion_position, ion_weights):
     return ion_photon_count
 
 
-def ion_voltage_function(ion_position, ion_voltage):
+def ion_voltage_function(ion_voltage):
     '''get the photon count from the applied voltage '''
     write_voltage(ion_voltage)
     ion_photon_count = take_photon()
     return ion_photon_count
 
 
-def ion_position_function(ion_weights, ion_position):
-    '''get photon count from the applied position and specified position'''
-    ion_voltage = get_Voltage(weight_Params, ion_position[0])
-    write_voltage(ion_voltage)
-    ion_photon_count = take_photon()
-    return ion_photon_count
+# def ion_position_function(ion_weights, ion_position):
+#     '''get photon count from the applied position and specified position'''
+#     ion_voltage = get_Voltage(weight_Params, ion_position[0])
+#     write_voltage(ion_voltage)
+#     ion_photon_count = take_photon()
+#     return ion_photon_count
 
 
-def func_new_position_ion(old_position, new_position):
-    '''get photon count from the new applied position '''
-    ion_voltage = get_Voltage(weight_Params, new_position[0])
-    write_voltage(ion_voltage)
-    ion_photon_count = take_photon()
-    return ion_photon_count
+# def func_new_position_ion(old_position, new_position):
+#     '''get photon count from the new applied position '''
+#     ion_voltage = get_Voltage(weight_Params, new_position[0])
+#     write_voltage(ion_voltage)
+#     ion_photon_count = take_photon()
+#     return ion_photon_count
 
 
-def func_new_weights_ion(old_params, new_params):
-    '''function to create array of new photon counts for each new updated weight'''
+# def func_new_weights_ion(old_params, new_params):
+#     '''function to create array of new photon counts for each new updated weight'''
 
-    position = float(input_goto_pos.get())
-    weight_Params = np.array([float(input_ex.get()), float(
-        input_ey.get()), float(input_harm.get()), float(input_uni.get())])
+#     position = float(input_goto_pos.get())
+#     # weight_Params = np.array([float(input_ex.get()), float(
+#     #     input_ey.get()), float(input_harm.get()), float(input_uni.get())])
 
-    no_of_params = len(old_params)
-    final_photon_count = np.full((no_of_params), 0)
-    temp_params = old_params
-    # for loop to get the change photon count after a new parameter is applied independently
-    for i in range(0, no_of_params):
-        old_params[i] = new_params[i]  # apply new parameter
+#     no_of_params = len(old_params)
+#     final_photon_count = np.full((no_of_params), 0)
+#     temp_params = old_params
+#     # for loop to get the change photon count after a new parameter is applied independently
+#     for i in range(0, no_of_params):
+#         old_params[i] = new_params[i]  # apply new parameter
+#         # get the photon count after new parameter is applied
+#         final_photon_count[i] = ion_weight_function(position, old_params)
+#         old_params = temp_params  # return to previous parameters
+#     return final_photon_count
+
+def Ion_grad(x_prev, x):
+    """ gradient function for the Ion given the previous and new values for the input parameters """
+    dim = len(x_prev)  # get dimension of parameter space
+
+    y_prev = take_photon()  # takes current photon before new weights
+    y_prev = np.full(dim, y_prev)
+    y = np.full(dim, 0)
+
+    temp_x = x_prev
+    # for loop to get y after a new parameter is applied independently
+    for i in range(0, dim):
+        x_prev[i] = x[i]  # apply new parameter
         # get the photon count after new parameter is applied
-        final_photon_count[i] = ion_weight_function(position, old_params)
-        old_params = temp_params  # return to previous parameters
-    return final_photon_count
+        y[i] = ion_voltage_function(x_prev)
+        x_prev = temp_x  # return to previous parameters
+
+    ## Get Gradients ###
+    epsilon = np.exp(-8)
+    deltax = np.subtract(x, x_prev)
+    deltay = np.subtract(y, y_prev)
+    deltax = np.add(deltax, epsilon)  # prevent divide by zero
+    gradient_list = np.divide(deltay, deltax)
+    return gradient_list  # returns gradient for each dimension in a list
 
 
 def func_new_voltage_ion(old_voltage, new_voltage):
@@ -169,15 +194,15 @@ def func_new_voltage_ion(old_voltage, new_voltage):
         input_ey.get()), float(input_harm.get()), float(input_uni.get())])
 
     no_of_params = len(old_voltage)
-    final_photon_count = np.full((no_of_params), 0)
+    new_photon_count = np.full((no_of_params), 0)
     temp_params = old_voltage
     # for loop to get the change in photon count after a new parameter is applied independently
     for i in range(0, no_of_params):
         old_voltage[i] = new_voltage[i]  # apply new parameter
         # get the photon count after new parameter is applied
-        final_photon_count[i] = ion_voltage_function(position, old_voltage)
+        new_photon_count[i] = ion_voltage_function(old_voltage)
         old_voltage = temp_params  # return to previous parameters
-    return final_photon_count
+    return new_photon_count
 
 
 def rate_of_change(x_1, x_2, y_1, y_2):
@@ -331,7 +356,7 @@ def shuttle_ion(current_position, target_position, weight_Params, speed):
             list_voltages.delete(0, 100)
             for i in range(len(final_Voltage)):
                 list_voltages.insert(i, "V" + str(i) +
-                                 ": " + str(final_Voltage[i]))  # update the list
+                                     ": " + str(final_Voltage[i]))  # update the list
         while current_position > target_position and running:
             current_position = current_position - 0.1
             current_position = np.around(current_position, decimals=1)
@@ -350,7 +375,7 @@ def shuttle_ion(current_position, target_position, weight_Params, speed):
             list_voltages.delete(0, 100)
             for i in range(len(final_Voltage)):
                 list_voltages.insert(i, "V" + str(i) +
-                                 ": " + str(final_Voltage[i]))  # update the list
+                                     ": " + str(final_Voltage[i]))  # update the list
 
     elif target_position < current_position:
         while current_position > target_position and running:
@@ -373,7 +398,7 @@ def shuttle_ion(current_position, target_position, weight_Params, speed):
             list_voltages.delete(0, 100)
             for i in range(len(final_Voltage)):
                 list_voltages.insert(i, "V" + str(i) +
-                                 ": " + str(final_Voltage[i]))  # update the list
+                                     ": " + str(final_Voltage[i]))  # update the list
         while current_position < target_position and running:
             current_position = current_position + 0.1
             current_position = np.around(current_position, decimals=1)
@@ -392,8 +417,7 @@ def shuttle_ion(current_position, target_position, weight_Params, speed):
             list_voltages.delete(0, 100)
             for i in range(len(final_Voltage)):
                 list_voltages.insert(i, "V" + str(i) +
-                                 ": " + str(final_Voltage[i]))  # update the list
-
+                                     ": " + str(final_Voltage[i]))  # update the list
     else:
         None
     a.cla()
@@ -412,7 +436,8 @@ def shuttle_ion(current_position, target_position, weight_Params, speed):
 
 def update_plots(photonCounts, waveform_in, parameter_length, waveform_list):
     ###### update waveform plot ######
-    waveform1 = [waveform_list[i:i+parameter_length] for i in range(0, len(waveform_list), parameter_length)]
+    waveform1 = [waveform_list[i:i+parameter_length]
+                 for i in range(0, len(waveform_list), parameter_length)]
     # print(waveform1)
     waveform3 = np.asarray(waveform1) - np.asarray(waveform1)[0]
     waveform1 = np.asarray(waveform1)
@@ -420,22 +445,18 @@ def update_plots(photonCounts, waveform_in, parameter_length, waveform_list):
     a2.cla()
     c.cla()
     a.plot(waveform_in[1::2], color='blue', linestyle='-', marker='o')
-    a2.plot(waveform_in[2::2], color='blue', linestyle='-', marker='o')    
+    a2.plot(waveform_in[2::2], color='blue', linestyle='-', marker='o')
     # print(waveform3)
     c.imshow(waveform3.T, cmap="hot")
     # c.colorbar()
     c.set_xlabel("Iteration Number")
     c.set_ylabel("Electrode")
     c.set_title("$V_n-V_0$")
-
-
-
     a.set_title("Waveform: 1, 3, 5...", fontsize=14)
     a2.set_title("Waveform:2, 4, 6...", fontsize=14)
     a.set_ylabel("Voltage (V)", fontsize=14)
     a2.set_ylabel("Voltage (V)", fontsize=14)
     a2.set_xlabel("Electrode", fontsize=14)
-
 
     ###### Update Photon Plot #######
     b.cla()
@@ -446,10 +467,12 @@ def update_plots(photonCounts, waveform_in, parameter_length, waveform_list):
     fig.tight_layout()
     canvas.draw()
 
+
 def adam(function_new_output, function_output, function_read_ouput, parameters_to_optimise, fixed_parameter, param_range):
     ''' Adam estimation for photon count and weight compensation '''
+
     parameters_to_optimise_with_range = parameters_to_optimise[param_range[0]:param_range[1]]
-    position = fixed_parameter
+
     no_of_params = len(parameters_to_optimise_with_range)
     iter_count = 0
     try:
@@ -461,14 +484,12 @@ def adam(function_new_output, function_output, function_read_ouput, parameters_t
     parameter_array = np.array([parameters_to_optimise_with_range])
     output_array = np.array([function_read_ouput()])
 
-    # print("Starting Adam for :")
-    # print("	x0_y0 = ", parameters_to_optimise_with_range,
-    #       '\n with range: ', param_range)
-    # print("Number of iterations", number_of_iterations)
     try:
-        alpha = np.full((no_of_params), float(input_stepsize.get()))  # learning rate (and initial step) 0.005
+        # learning rate (and initial step) 0.005
+        alpha = np.full((no_of_params), float(input_stepsize.get()))
         beta_1 = float(input_decay.get())
-        beta_2 = float(input_expDecay.get())  # exponential decay rates for moment estimates
+        # exponential decay rates for moment estimates
+        beta_2 = float(input_expDecay.get())
     except:
         popupmsg("Invalid Parameter Input")
     epsilon = 1e-8
@@ -524,11 +545,6 @@ def adam(function_new_output, function_output, function_read_ouput, parameters_t
                              output_2[param_range[0]:param_range[1]])
         g_t = g_t/np.linalg.norm(g_t)
 
-        # print("x, y, params: ", theta_0)
-        # print("final photon count: ", -final_output)
-        # print("Iteration #", iter_count)
-        # print("Gradient: ", g_t/np.linalg.norm(g_t))
-
         if final_output < maxPhoton:
             maxPhoton = final_output  # update max photon count and corresponding voltages
             maxVoltage = theta_0  # save voltage config for new photon max
@@ -537,10 +553,10 @@ def adam(function_new_output, function_output, function_read_ouput, parameters_t
             parameter_array, theta_0)  # save param array
         output_array = np.append(
             output_array, final_output)  # save output array
-        
+
         ##update plots ##
 
-        update_plots(-output_array, theta_0,no_of_params, parameter_array )
+        update_plots(-output_array, theta_0, no_of_params, parameter_array)
 
         theta_r = np.around(theta_0, decimals=4)
 
@@ -566,8 +582,11 @@ def adam(function_new_output, function_output, function_read_ouput, parameters_t
             popupmsg("Invalid threshold")
 
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> Gradient Function
 ####### Check if final photon count is less than the max over the iteration. If it is less, it applies the voltage configuration corresponding to the highest photon count ######
     if final_output > maxPhoton:
         parameter_array = np.append(
@@ -575,26 +594,24 @@ def adam(function_new_output, function_output, function_read_ouput, parameters_t
         exit_photon_count = function_output(fixed_parameter, maxVoltage)
 
         maxVoltage = np.around(maxVoltage, decimals=4)
-        list_voltages.delete(0, 100)        
+        list_voltages.delete(0, 100)
         for i in range(len(maxVoltage)):
             list_voltages.insert(i, "V" + str(i) +
                                  ": " + str(maxVoltage[i]))  # update the list with max voltage
         np.savetxt(r'VoltagePlaceHolder.csv',
-                maxVoltage.T, delimiter=',')
+                   maxVoltage.T, delimiter=',')
         output_array = np.append(
             output_array, exit_photon_count)  # save output array
         # print("max", maxVoltage)
     else:
         np.savetxt(r'VoltagePlaceHolder.csv',
-                theta_0.T, delimiter=',')
-
-      
+                   theta_0.T, delimiter=',')
 
     data_processing(parameter_array, output_array,
                     no_of_params, iter_count)  # plot data
 
 
-######################################################################################################################    
+######################################################################################################################
 
 def startup():
 
@@ -611,10 +628,10 @@ def startup():
     # input_time_between_step.insert(0, "0.01")
 
 
-
 def optimise():
     start()
-    final_voltage =  pd.read_csv('VoltagePlaceHolder.csv', sep=',', header=None)  #get_Voltage(weight_Params, position)
+    # get_Voltage(weight_Params, position)
+    final_voltage = pd.read_csv('VoltagePlaceHolder.csv', sep=',', header=None)
     final_voltage = np.array(final_voltage.iloc[:, 0], dtype=float)
 
     if len(final_voltage) == 1:
@@ -622,10 +639,11 @@ def optimise():
     else:
         position = float(input_goto_pos.get())
         # weight_Params = np.array([float(input_ex.get()), float(
-        #     input_ey.get()), float(input_harm.get()), float(input_uni.get())])  
+        #     input_ey.get()), float(input_harm.get()), float(input_uni.get())])
         # print(final_voltage)
         adam(func_new_voltage_ion, ion_voltage_function,
-            take_photon, final_voltage, position, [0, 48])
+             take_photon, final_voltage, position, [0, 48])
+
 
 def popupmsg(msg):
     popup = Tk()
@@ -637,14 +655,15 @@ def popupmsg(msg):
     B1.pack()
     popup.mainloop()
 
+
 def clicked():
     # apply weights and update voltages.
     start()
     res = input_goto_pos.get()
     weight_Params = np.array([float(input_ex.get()), float(
-                input_ey.get()), float(input_harm.get()), float(input_uni.get())])  # store weights from user input
+        input_ey.get()), float(input_harm.get()), float(input_uni.get())])  # store weights from user input
     try:
-        if res == '' or float(res) > 1000 or float(res) < 0 :
+        if res == '' or float(res) > 1000 or float(res) < 0:
             popupmsg("Position Out of range")
             sys.exit()
     except:
@@ -653,7 +672,7 @@ def clicked():
         input_current_pos.delete(0, END)
         input_current_pos.insert(0, res)  # update the current position
         position = float(input_goto_pos.get())
-        
+
         final_voltage = get_Voltage(weight_Params, position)
         write_voltage(final_voltage)  # write voltages to the DAQ
 
@@ -665,7 +684,7 @@ def clicked():
             list_voltages.insert(i, "V" + str(i) +
                                     ": " + str(final_voltage[i]))  # update the list
         np.savetxt(r'VoltagePlaceHolder.csv',
-                final_voltage.T, delimiter=',')
+                   final_voltage.T, delimiter=',')
         a.cla()
         a2.cla()
         a.plot(final_voltage[1::2], color='blue', linestyle='-', marker='o')
@@ -679,49 +698,52 @@ def clicked():
         canvas.draw()
         window.update()
     elif not(float(res) == float(input_current_pos.get())):
-        final_voltage = shuttle_ion(float(input_current_pos.get()), float(input_goto_pos.get()),weight_Params, float(input_time_between_step.get()))
+        final_voltage = shuttle_ion(float(input_current_pos.get()), float(
+            input_goto_pos.get()), weight_Params, float(input_time_between_step.get()))
         final_voltage = np.around(final_voltage, decimals=4)
         list_voltages.delete(0, 100)
         for i in range(len(final_voltage)):
             list_voltages.insert(i, "V" + str(i) +
                                     ": " + str(final_voltage[i]))  # update the list
         np.savetxt(r'VoltagePlaceHolder.csv',
-                final_voltage.T, delimiter=',')
-        
-    
-    
+                   final_voltage.T, delimiter=',')
+
     # input_current_pos.configure(text=res)
 
-running = True 
+
+running = True
+
+
 def start():
     """Enable scanning by setting the global flag to True."""
     global running
     running = True
+
+
 def stop():
     """Stop scanning by setting the global flag to False."""
     global running
     running = False
 
+
 window.title("Controller and Adam Optimiser for Chip Ion Trap ")
 window.geometry('1200x600')
 
 np.savetxt(r'VoltagePlaceHolder.csv',
-               [0], delimiter=',')
+           [0], delimiter=',')
 
 fontsize = 15
 
 ######### Setup plots ########
 fig = Figure(figsize=(9, 6))
-a = fig.add_subplot(222) #waveform
+a = fig.add_subplot(222)  # waveform
 a2 = fig.add_subplot(224)
-b = fig.add_subplot(221) #photon count
-c = fig.add_subplot(223) #voltage difference 
+b = fig.add_subplot(221)  # photon count
+c = fig.add_subplot(223)  # voltage difference
 fig.tight_layout()
 canvas = FigureCanvasTkAgg(fig, master=window)
-canvas.get_tk_widget().grid(column = 4, row = 3, rowspan=20, columnspan = 8)
+canvas.get_tk_widget().grid(column=4, row=3, rowspan=20, columnspan=8)
 canvas.draw()
-
-
 
 
 lbl_current_pos = Label(window, text="Current Position: ",
@@ -735,7 +757,7 @@ btn_goto = Button(window, text="Go/Update",
 
 btn_stop = Button(window, text="Stop",
                   command=stop, font=("Arial", fontsize))
-    
+
 
 lbl_voltage = Label(window, text="Applied Voltages: ",
                     font=("Arial", fontsize))
@@ -757,7 +779,7 @@ input_uni = Entry(window,  font=("Arial", 16), width=6)
 
 ex_var = StringVar()
 ey_var = StringVar()
-harm_var =StringVar()
+harm_var = StringVar()
 uni_var = StringVar()
 
 lbl_ex_applied = Label(textvariable=ex_var, font=("Arial", 16))
@@ -766,54 +788,57 @@ lbl_harm_applied = Label(textvariable=harm_var, font=("Arial", 16))
 lbl_uni_applied = Label(textvariable=uni_var, font=("Arial", 16))
 window.update()
 
-lbl_stepsize = Label(text ="Step Size (Volts):",font=("Arial", 16))
+lbl_stepsize = Label(text="Step Size (Volts):", font=("Arial", 16))
 input_stepsize = Entry(window, font=("Arial", 16), width=6)
-lbl_stepNum = Label(text ="Number of Steps:",font=("Arial", 16))
+lbl_stepNum = Label(text="Number of Steps:", font=("Arial", 16))
 input_stepNum = Entry(window, font=("Arial", 16), width=6)
-lbl_decay = Label(text ="Average Decay: (0 <= x < 1)",font=("Arial", 8))
+lbl_decay = Label(text="Average Decay: (0 <= x < 1)", font=("Arial", 8))
 input_decay = Entry(window, font=("Arial", 8), width=6)
-lbl_expDecay = Label(text ="Exp Decay: (0 <= x < 1)",font=("Arial", 8))
+lbl_expDecay = Label(text="Exp Decay: (0 <= x < 1)", font=("Arial", 8))
 input_expDecay = Entry(window, font=("Arial", 8), width=6)
-lbl_threshold = Label(text ="Threshold (0<=x<=1):",font=("Arial", 8))
-lbl_threshold2 = Label(text ="Optimiser will terminate if \n photon count = threshold*(starting photon count) \n i.e 0.7 means will terminate if photon count \n drops below 70% of starting photon count",font=("Arial", 8))
+lbl_threshold = Label(text="Threshold (0<=x<=1):", font=("Arial", 8))
+lbl_threshold2 = Label(
+    text="Optimiser will terminate if \n photon count = threshold*(starting photon count) \n i.e 0.7 means will terminate if photon count \n drops below 70% of starting photon count", font=("Arial", 8))
 input_threshold = Entry(window, font=("Arial", 8), width=6)
-lbl_time_between_step = Label(text = "Shuttle Speed (um/10ms)", font = ("Arial", 10))
-input_time_between_step = Spinbox(values=(0.1, 0.2, 0.5, 1, 1.1, 1.2, 1.5, 2), width = 6, font = ("Arial", 10))
+lbl_time_between_step = Label(
+    text="Shuttle Speed (um/10ms)", font=("Arial", 10))
+input_time_between_step = Spinbox(
+    values=(0.1, 0.2, 0.5, 1, 1.1, 1.2, 1.5, 2), width=6, font=("Arial", 10))
 
 
 graphOn = IntVar()
 weightOn = IntVar()
-Checkbutton(window, text="Show Final Graphs", variable=graphOn).grid(row=0, column = 1)
-Checkbutton(window, text="Manual Weights", variable=weightOn).grid(row=4, column = 0)
+Checkbutton(window, text="Show Final Graphs",
+            variable=graphOn).grid(row=0, column=1)
+Checkbutton(window, text="Manual Weights",
+            variable=weightOn).grid(row=4, column=0)
 
 
+lbl_stepsize.grid(row=0, column=4)
+input_stepsize.grid(row=0, column=5)
+lbl_stepNum.grid(row=1, column=4)
+input_stepNum.grid(row=1, column=5)
 
+lbl_decay.grid(row=0, column=6)
+input_decay.grid(row=0, column=7)
+lbl_expDecay.grid(row=1, column=6)
+input_expDecay.grid(row=1, column=7)
 
-lbl_stepsize.grid(row = 0, column = 4)
-input_stepsize.grid(row = 0, column = 5)
-lbl_stepNum.grid(row = 1, column = 4)
-input_stepNum.grid(row = 1, column = 5)
-
-lbl_decay.grid(row = 0, column = 6)
-input_decay.grid(row = 0, column = 7)
-lbl_expDecay.grid(row = 1, column = 6)
-input_expDecay.grid(row = 1, column = 7)
-
-lbl_threshold.grid(row = 0, column = 8)
-input_threshold.grid(row = 0, column = 9)
-lbl_threshold2.grid(row=1, column = 8, columnspan = 3)
+lbl_threshold.grid(row=0, column=8)
+input_threshold.grid(row=0, column=9)
+lbl_threshold2.grid(row=1, column=8, columnspan=3)
 
 lbl_current_pos.grid(column=0, row=1, pady=(0, 0))
 input_current_pos.grid(column=1, row=1, pady=(0, 0))
 lbl_goto_pos.grid(column=0, row=2, padx=(0, 0), pady=(0, 0))
-input_goto_pos.grid(column=1, row=2, pady=(0, 0), padx=(0,0))
-btn_goto.grid(column=1, row=2,columnspan = 4)
-btn_stop.grid(column=2, row=2,columnspan = 4)
-list_voltages.grid(column=12, row=1, pady=(0, 0), rowspan = 10)
+input_goto_pos.grid(column=1, row=2, pady=(0, 0), padx=(0, 0))
+btn_goto.grid(column=1, row=2, columnspan=4)
+btn_stop.grid(column=2, row=2, columnspan=4)
+list_voltages.grid(column=12, row=1, pady=(0, 0), rowspan=10)
 lbl_voltage.grid(column=12, row=0)
 
-lbl_time_between_step.grid(row = 3, column = 0)
-input_time_between_step.grid(row = 3, column = 1)
+lbl_time_between_step.grid(row=3, column=0)
+input_time_between_step.grid(row=3, column=1)
 
 lbl_weights.grid(row=5, column=0)
 lbl_weightsApplied.grid(row=5, column=2)
@@ -827,10 +852,10 @@ lbl_uni.grid(row=9, column=0)
 input_uni.grid(row=9, column=1)
 btn_optimise.grid(row=0, column=0)
 
-lbl_ex_applied.grid(row = 6, column = 2)
-lbl_ey_applied.grid(row = 7, column = 2)
-lbl_harm_applied.grid(row = 8, column = 2)
-lbl_uni_applied.grid(row = 9, column = 2)
+lbl_ex_applied.grid(row=6, column=2)
+lbl_ey_applied.grid(row=7, column=2)
+lbl_harm_applied.grid(row=8, column=2)
+lbl_uni_applied.grid(row=9, column=2)
 
 startup()
 

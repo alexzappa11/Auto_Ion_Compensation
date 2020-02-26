@@ -147,6 +147,7 @@ def rate_of_change(x_1, x_2, y_1, y_2):
 
 
 def get_Voltage(weight_Params, position):
+    
     '''Get waveform for specific direction, apply the weights and return voltage array'''
     outV_compEx = CSV_Read(position, compExTol)
     outV_compEx = outV_compEx*weight_Params[0]

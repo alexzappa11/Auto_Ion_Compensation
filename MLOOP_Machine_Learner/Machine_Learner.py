@@ -53,15 +53,16 @@ class CustomInterface(mli.Interface):
         params = params_dict['params']
 
         # Get cost from the simulation function
-        # cost = self.simulationFunction.evaluate_at_params(params)
+        cost = self.simulationFunction.evaluate_at_params(params)
 
         # Get cost from the Ion Function
-        cost = self.experiment_function.Ion_function(params)
+        # cost = self.experiment_function.Ion_function(params)
 
         print("Cost: ", cost)  # !!!!Param length must be 48!!!
 
         # Define the uncertainty
-        uncer = 0.20*3000
+        # uncer = 0.20*3000
+        uncer = 0
 
         # The evaluation will always be a success
         bad = False
@@ -86,8 +87,8 @@ def main():
         interface,
         controller_type='neural_net',
         training_type='differential_evolution',
-        # num_training_runs=100,
-        max_num_runs=10,
+        num_training_runs=100,
+        max_num_runs=500,
         no_delay=True,  # If True, there is never any delay between a returned cost and the next parameters to run for the experiment. In practice, this means if the machine learning learner has not prepared the next parameters in time the learner defined by the initial training source is used instead. If false, the controller will wait for the machine learning learner to predict the next parameters and there may be a delay between runs.
         num_params=48,
         min_boundary=interface.starting_voltage - 0.5,
@@ -97,23 +98,23 @@ def main():
         fit_hyperparameters=False,
         visualizations=True,
         # first_params=interface.min_parameters()*1.2, #use this for simulation
-        first_params=interface.starting_voltage
+        first_params=interface.starting_voltage,
+        nn_training_filename="M-LOOP_archives/learner_archive_2020-02-10_11-46.txt"
     )
 
-    NeuralNetLearningController.optimize()
-    finalCost = interface.experiment_function.Ion_function(
-        NeuralNetLearningController.best_params)  # Apply the best params form the run
-    print("Best parameters Applied with a final cost of: ", finalCost)
+    # run the training and optimisation
+    # NeuralNetLearningController.optimize()
 
-    mlv.show_all_default_visualizations(NeuralNetLearningController)
+    # Apply the best params form the run
+    # finalCost = interface.experiment_function.Ion_function(
+    #     NeuralNetLearningController.best_params)
+    # print("Best parameters Applied with a final cost of: ", finalCost)
 
-    # TODO Print distance actual is away from approximation scaled difference in the simulation function
-    # TODO Safety Net
-    # TODO Load in the trained Network and have it find the optimal point (this will change though if the electric field in the trap changes)
-    # TODO Live graph of costs
+    # Show Plots
+    # mlv.show_all_default_visualizations(NeuralNetLearningController)
 
     # NeuralNetLearningController.print_results()
-    # NeuralNetLearningController.ml_learner.neural_net[0]
+    NeuralNetLearningController.ml_learner.load()
 
     # For simulation Testing
     # print("Actual minimum value is: ", interface.min())
@@ -122,3 +123,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# TODO Print distance actual is away from approximation scaled difference in the simulation function
+# TODO Load in the trained Network and have it find the optimal point (this will change though if the electric field in the trap changes)
+# TODO Live graph of costs

@@ -158,11 +158,11 @@ class Ion_Trap_control():
 
         if self.istest:
              # set photon count to random if istest is true
-            self.photon_count = random.randint(0, 2000)       
+            self.photon_count = random.randint(0, 2000)
         else:
              # write voltage values to the DAQ
             self._write_voltage(input_voltage)
-            self.photon_count = self._get_count()  # Get the photon count           
+            self.photon_count = self._get_count()  # Get the photon count
 
         return self.photon_count  # return photon count
 
