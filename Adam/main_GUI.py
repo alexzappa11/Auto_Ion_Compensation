@@ -1,3 +1,4 @@
+from Quadractic_Simulator import *
 from tkinter import *
 # from main import *
 import sys
@@ -17,6 +18,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 import matplotlib
 matplotlib.use('TkAgg')
+
 
 window = Tk()
 
@@ -62,7 +64,7 @@ def CSV_Read(position, array):
     return V_f
 
 
-def data_processing(parameter_input, output_vals, parameter_size, num_its):
+def data_processing(parameter_input, output_vals, parameter_size, num_its, optType):
 
     ########## Plotting Data ###########
     if graphOn.get():
@@ -104,9 +106,9 @@ def data_processing(parameter_input, output_vals, parameter_size, num_its):
         f3.show()
 
     timestr = time.strftime("%Y%m%d-%H%M%S")
-    np.savetxt(r'Output_Data\parameters_each_iteration'+timestr+'.csv',
+    np.savetxt(r'Output_Data\parameters_each_iteration_'+optType+'_'+timestr+'.csv',
                waveform.T, delimiter=',')
-    np.savetxt(r'Output_Data\output_each_iteration'+timestr+'.csv',
+    np.savetxt(r'Output_Data\output_each_iteration_'+optType+'_'+timestr+'.csv',
                output_vals, delimiter=',')
     np.savetxt(r'VoltagePlaceHolder.csv',
                waveform[-1].T, delimiter=',')
@@ -186,33 +188,33 @@ def Ion_grad(x_prev, x):
     return gradient_list  # returns gradient for each dimension in a list
 
 
-def func_new_voltage_ion(old_voltage, new_voltage):
-    '''function to create array of new photon counts for each new updated voltage'''
+# def func_new_voltage_ion(old_voltage, new_voltage):
+#     '''function to create array of new photon counts for each new updated voltage'''
 
-    position = float(input_goto_pos.get())
-    weight_Params = np.array([float(input_ex.get()), float(
-        input_ey.get()), float(input_harm.get()), float(input_uni.get())])
+#     position = float(input_goto_pos.get())
+#     weight_Params = np.array([float(input_ex.get()), float(
+#         input_ey.get()), float(input_harm.get()), float(input_uni.get())])
 
-    no_of_params = len(old_voltage)
-    new_photon_count = np.full((no_of_params), 0)
-    temp_params = old_voltage
-    # for loop to get the change in photon count after a new parameter is applied independently
-    for i in range(0, no_of_params):
-        old_voltage[i] = new_voltage[i]  # apply new parameter
-        # get the photon count after new parameter is applied
-        new_photon_count[i] = ion_voltage_function(old_voltage)
-        old_voltage = temp_params  # return to previous parameters
-    return new_photon_count
+#     no_of_params = len(old_voltage)
+#     new_photon_count = np.full((no_of_params), 0)
+#     temp_params = old_voltage
+#     # for loop to get the change in photon count after a new parameter is applied independently
+#     for i in range(0, no_of_params):
+#         old_voltage[i] = new_voltage[i]  # apply new parameter
+#         # get the photon count after new parameter is applied
+#         new_photon_count[i] = ion_voltage_function(old_voltage)
+#         old_voltage = temp_params  # return to previous parameters
+#     return new_photon_count
 
 
-def rate_of_change(x_1, x_2, y_1, y_2):
-    '''calculates the slope for multi-dimensional function by getting the change in photon count / change in dependant var (weight, position, voltage) '''
-    epsilon = np.exp(-8)
-    deltax = np.subtract(x_2, x_1)
-    deltay = np.subtract(y_2, y_1)
-    deltax = np.add(deltax, epsilon)  # prevent divide by zero
-    gradient_list = np.divide(deltay, deltax)
-    return gradient_list  # returns gradient for each dimension in a list
+# def rate_of_change(x_1, x_2, y_1, y_2):
+#     '''calculates the slope for multi-dimensional function by getting the change in photon count / change in dependant var (weight, position, voltage) '''
+#     epsilon = np.exp(-8)
+#     deltax = np.subtract(x_2, x_1)
+#     deltay = np.subtract(y_2, y_1)
+#     deltax = np.add(deltax, epsilon)  # prevent divide by zero
+#     gradient_list = np.divide(deltay, deltax)
+#     return gradient_list  # returns gradient for each dimension in a list
 
 
 def get_Voltage(weight_Params, position):
@@ -311,10 +313,12 @@ def write_voltage(final_voltage):
     return None
 
 
+
 def take_photon():
 
     # time.sleep(0.01)
     # return -random.randint(2000, 5000)
+    
     channel = 5  # PMT channel for where the photons are being read from
     #######   reads photon count #############
     file = r'"C:\src\id800.exe"'
@@ -467,108 +471,79 @@ def update_plots(photonCounts, waveform_in, parameter_length, waveform_list):
     fig.tight_layout()
     canvas.draw()
 
-
-def adam(function_new_output, function_output, function_read_ouput, parameters_to_optimise, fixed_parameter, param_range):
-    ''' Adam estimation for photon count and weight compensation '''
-
-    parameters_to_optimise_with_range = parameters_to_optimise[param_range[0]:param_range[1]]
-
-    no_of_params = len(parameters_to_optimise_with_range)
-    iter_count = 0
-    try:
-        number_of_iterations = int(input_stepNum.get())
-    except:
-        popupmsg("Invalid Number of Iterations, enter an Integer")
-
-    # keeps track of parameter evolution
-    parameter_array = np.array([parameters_to_optimise_with_range])
-    output_array = np.array([function_read_ouput()])
+def bisection(function_output, x_start):
+    
+    ''' Bisection estimation for photon count and voltage compensation '''
+    d = len(x_start)
+    step = np.ones(d) * 0.005  # inital step (can be anything)
+    gradient_step = np.full((d), 0.005)  
+    t = 1  # set the counter
 
     try:
-        # learning rate (and initial step) 0.005
-        alpha = np.full((no_of_params), float(input_stepsize.get()))
-        beta_1 = float(input_decay.get())
-        # exponential decay rates for moment estimates
-        beta_2 = float(input_expDecay.get())
+        max_iterations = int(input_stepNum.get()) # Get number of iterations from GUI
     except:
-        popupmsg("Invalid Parameter Input")
-    epsilon = 1e-8
-    theta_0 = parameters_to_optimise_with_range  # initialize the vector
-    m_t = np.full((no_of_params), 0.0)
-    v_t = np.full((no_of_params), 0.0)
+        popupmsg("Invalid Number of Iterations, enter an Integer")      
 
-    # add starting values and initial step, this can be anything random
-    theta_0_initial_step = np.add(theta_0, alpha)
+    output_init_const = function_output(x_start) # save photon count before the start of the interation
+    parameter_array = np.array([x_start])   # Initialise parameter list to keep track of parameter evolution
+    output_array = np.array([output_init_const])
+    maxPhoton = output_init_const  # initialise max photon count    
+    maxVoltage = parameter_array # initialise max photon voltage config
 
-    ###### get initial gradient #########
-    output_init = function_read_ouput()
-    # print("initial photon", output_init)
-    output_2 = function_new_output(theta_0, theta_0_initial_step)
-    g_t = rate_of_change(theta_0, theta_0_initial_step, output_init, output_2)
-    g_t = np.divide(g_t, np.linalg.norm(g_t))
+    x_0 = x_start  # initialize the vector
+    x_first_step = np.add(x_0, gradient_step)  # Needed for initial gradient calculation (initial x + step)
+    g_0 = Ion_grad(x_start, x_first_step) # gradient calculation using Ion gradient 
+    g_0_unit = np.sign(g_0)
+    print(g_0)
+    print(g_0_unit)
 
-    # save photon count before the start of the interation
-    output_init_const = output_init
-    maxPhoton = output_init_const  # initialise max photon count
-    # initialise max photon voltage config
-    maxVoltage = parameter_array
+    g_0_m1 = np.ones(len(x_start))
 
-    for i in range(number_of_iterations):
-        iter_count = iter_count + 1
-        m_t = beta_1*m_t + (1-beta_1)*g_t
-        v_t = beta_2*v_t + (1-beta_2)*(np.power(g_t, 2))
-        m_cap = m_t/(1-(beta_1**iter_count))
-        v_cap = v_t/(1-(beta_2**iter_count))
-        theta_0_prev = theta_0
-        theta_0 = theta_0 - (np.multiply(alpha, m_cap)) / \
-            (np.sqrt(v_cap)+epsilon)
 
-        output_init = function_read_ouput()  # get photon count
-        output_1 = np.full((no_of_params), output_init)
+    for i in range(max_iterations):
 
-        parameters_to_optimise[param_range[0]:param_range[1]] = theta_0_prev
-        # insert old values into full parameter list
-        params_prev = parameters_to_optimise
+        t += 1
+        x_1 = x_0 - g_0_unit * step  # advance x one step
+        x_1_Gstep = np.add(x_1, gradient_step)
+        g_1 = Ion_grad(x_1, x_1_Gstep)  # gradient at new point #####GRADIENT USING STEP OR PREVIOUS VALUE?????#####
+        g_1_unit = np.sign(g_1)
 
-        # print("old params", params_prev)
+        g_1_0 = g_1_unit * g_0_unit
 
-        parameters_to_optimise[param_range[0]:param_range[1]] = theta_0
-        # insert new values into full parameter list
-        params_final = parameters_to_optimise
+        final_output = function_output(x_1)
+       
+        print("Gradients: ", g_1)
+        print("Parameters: ", x_1)
 
-        # print("new params", params_final)
+        step_mult = np.ones(d)* 2.0
+        step_mult = np.where(g_0_m1 == -1.0, 1.0, step_mult)
+        step_mult = np.where(g_1_0 == -1.0, 0.5, step_mult)
+        step = step * step_mult
 
-        output_2 = function_new_output(params_prev, params_final)
-        final_output = function_output(fixed_parameter, params_final)
-
-        g_t = rate_of_change(theta_0_prev, theta_0, output_1,
-                             output_2[param_range[0]:param_range[1]])
-        g_t = g_t/np.linalg.norm(g_t)
+        x_0 = x_1
+        g_0_unit = g_1_unit
+        g_0_m1 = g_1_0
 
         if final_output < maxPhoton:
             maxPhoton = final_output  # update max photon count and corresponding voltages
-            maxVoltage = theta_0  # save voltage config for new photon max
+            maxVoltage = x_1  # save voltage config for new photon max
 
         parameter_array = np.append(
-            parameter_array, theta_0)  # save param array
+            parameter_array, x_1)  # save param array
         output_array = np.append(
             output_array, final_output)  # save output array
 
         ##update plots ##
-
-        update_plots(-output_array, theta_0, no_of_params, parameter_array)
-
-        theta_r = np.around(theta_0, decimals=4)
-
+        update_plots(-output_array, x_1, d, parameter_array)
+        x_r = np.around(x_1, decimals=4)
         list_voltages.delete(0, 100)
-        for i in range(len(theta_r)):
+        for i in range(len(x_r)):
             list_voltages.insert(i, "V" + str(i) +
-                                 ": " + str(theta_r[i]))  # update the list
+                                 ": " + str(x_r[i]))  # update the list
         window.update()
-
-        np.savetxt(r'Output_Data\parameters_each_iteration_bin.csv',
+        np.savetxt(r'Output_Data\Bisection_parameters_each_iteration_bin.csv',
                    parameter_array, delimiter=',')
-        np.savetxt(r'Output_Data\output_each_iteration_bin.csv',
+        np.savetxt(r'Output_Data\Bisection_output_each_iteration_bin.csv',
                    output_array, delimiter=',')
 
         # if statement to break optimisation if the photon count drops below a percentage of the starting photon count
@@ -582,16 +557,145 @@ def adam(function_new_output, function_output, function_read_ouput, parameters_t
             popupmsg("Invalid threshold")
 
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> Gradient Function
 ####### Check if final photon count is less than the max over the iteration. If it is less, it applies the voltage configuration corresponding to the highest photon count ######
     if final_output > maxPhoton:
         parameter_array = np.append(
             parameter_array, maxVoltage)  # save param array
-        exit_photon_count = function_output(fixed_parameter, maxVoltage)
+        exit_photon_count = function_output(maxVoltage)
+
+        maxVoltage = np.around(maxVoltage, decimals=4)
+        list_voltages.delete(0, 100)
+        for i in range(len(maxVoltage)):
+            list_voltages.insert(i, "V" + str(i) +
+                                 ": " + str(maxVoltage[i]))  # update the list with max voltage
+        np.savetxt(r'VoltagePlaceHolder.csv',
+                   maxVoltage.T, delimiter=',')
+        output_array = np.append(
+            output_array, exit_photon_count)  # save output array
+        # print("max", maxVoltage)
+    else:
+        np.savetxt(r'VoltagePlaceHolder.csv',
+                   x_1.T, delimiter=',')
+
+    data_processing(parameter_array, output_array,
+                    d, t, "Bisection")  # plot data
+
+
+
+
+def adam(function_output, x_start):
+    
+    ''' Adam estimation for photon count and voltage compensation '''
+    no_of_params = len(x_start)
+    iter_count = 0
+    m_t = np.full((no_of_params), 0.0)
+    v_t = np.full((no_of_params), 0.0)
+
+    try:
+        number_of_iterations = int(input_stepNum.get()) # Get number of iterations from GUI
+    except:
+        popupmsg("Invalid Number of Iterations, enter an Integer")    
+    
+    output_init_const = function_output(x_start) # save photon count before the start of the interation
+    parameter_array = np.array([x_start])   # Initialise parameter list to keep track of parameter evolution
+    output_array = np.array([output_init_const])
+
+    maxPhoton = output_init_const  # initialise max photon count    
+    maxVoltage = parameter_array # initialise max photon voltage config
+
+    epsilon = 1e-8 #small value to prevent divide by zero
+    theta_0 = x_start  # initialize the vector 
+
+    try:
+        # learning rate from GUI
+        alpha = np.full((no_of_params), float(input_stepsize.get()))
+        beta_1 = float(input_decay.get())
+        # exponential decay rates for moment estimates
+        beta_2 = float(input_expDecay.get())
+    except:
+        popupmsg("Invalid Parameter Input")
+
+    # add starting values and initial step
+    x_first_step = np.add(theta_0, alpha)
+
+     ### Get initial gradient ###
+    g_t = Ion_grad(x_start, x_first_step)
+    g_t = np.divide(g_t, np.linalg.norm(g_t))
+    print(g_t)
+
+
+    ###### get initial gradient #########
+    # output_init = function_read_ouput()
+    # output_2 = function_new_output(theta_0, theta_0_initial_step)
+    # g_t = rate_of_change(theta_0, theta_0_initial_step, output_init, output_2)    
+    # g_t = np.divide(g_t, np.linalg.norm(g_t))
+
+
+    for i in range(number_of_iterations):
+
+        iter_count = iter_count + 1
+        m_t = beta_1*m_t + (1-beta_1)*g_t
+        v_t = beta_2*v_t + (1-beta_2)*(np.power(g_t, 2))
+        m_cap = m_t/(1-(beta_1**iter_count))
+        v_cap = v_t/(1-(beta_2**iter_count))
+        theta_0_prev = theta_0
+        theta_0 = theta_0 - (np.multiply(alpha, m_cap)) / \
+            (np.sqrt(v_cap)+epsilon)
+
+        # output_init = function_read_ouput()  # get photon count
+        # output_1 = np.full((no_of_params), output_init)        
+        # insert old values into full parameter list
+        # params_prev = theta_0_prev
+        # insert new values into full parameter list
+        # params_final = theta_0
+        # output_2 = function_new_output(params_prev, params_final)      
+        # g_t = rate_of_change(theta_0_prev, theta_0, output_1,
+        #                      output_2[param_range[0]:param_range[1]])
+
+        final_output = function_output(theta_0)
+        g_t = Ion_grad(theta_0_prev, theta_0)
+        g_t = g_t/np.linalg.norm(g_t)
+        print("Gradients: ", g_t)
+        print("Parameters: ", theta_0)
+
+        if final_output < maxPhoton:
+            maxPhoton = final_output  # update max photon count and corresponding voltages
+            maxVoltage = theta_0  # save voltage config for new photon max
+
+        parameter_array = np.append(
+            parameter_array, theta_0)  # save param array
+        output_array = np.append(
+            output_array, final_output)  # save output array
+
+        ##update plots ##
+        update_plots(-output_array, theta_0, no_of_params, parameter_array)
+        theta_r = np.around(theta_0, decimals=4)
+        list_voltages.delete(0, 100)
+        for i in range(len(theta_r)):
+            list_voltages.insert(i, "V" + str(i) +
+                                 ": " + str(theta_r[i]))  # update the list
+        window.update()
+        np.savetxt(r'Output_Data\Adam_parameters_each_iteration_bin.csv',
+                   parameter_array, delimiter=',')
+        np.savetxt(r'Output_Data\Adam_output_each_iteration_bin.csv',
+                   output_array, delimiter=',')
+
+        # if statement to break optimisation if the photon count drops below a percentage of the starting photon count
+        try:
+            if (final_output/output_init_const) < float(input_threshold.get()):
+                break  # break out of optimisation loop
+            elif not(running):
+                break
+
+        except:
+            popupmsg("Invalid threshold")
+
+
+####### Check if final photon count is less than the max over the iteration. If it is less, it applies the voltage configuration corresponding to the highest photon count ######
+    if final_output > maxPhoton:
+        parameter_array = np.append(
+            parameter_array, maxVoltage)  # save param array
+        exit_photon_count = function_output(maxVoltage)
 
         maxVoltage = np.around(maxVoltage, decimals=4)
         list_voltages.delete(0, 100)
@@ -608,7 +712,7 @@ def adam(function_new_output, function_output, function_read_ouput, parameters_t
                    theta_0.T, delimiter=',')
 
     data_processing(parameter_array, output_array,
-                    no_of_params, iter_count)  # plot data
+                    no_of_params, iter_count, "Adam")  # plot data
 
 
 ######################################################################################################################
@@ -637,13 +741,13 @@ def optimise():
     if len(final_voltage) == 1:
         popupmsg("Update Position First")
     else:
-        position = float(input_goto_pos.get())
+        # position = float(input_goto_pos.get())
         # weight_Params = np.array([float(input_ex.get()), float(
         #     input_ey.get()), float(input_harm.get()), float(input_uni.get())])
         # print(final_voltage)
-        adam(func_new_voltage_ion, ion_voltage_function,
-             take_photon, final_voltage, position, [0, 48])
 
+        # adam(ion_voltage_function, final_voltage)
+        bisection(ion_voltage_function, final_voltage)
 
 def popupmsg(msg):
     popup = Tk()
@@ -710,9 +814,7 @@ def clicked():
 
     # input_current_pos.configure(text=res)
 
-
 running = True
-
 
 def start():
     """Enable scanning by setting the global flag to True."""
